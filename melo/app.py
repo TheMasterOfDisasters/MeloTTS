@@ -1,14 +1,13 @@
-from fastapi import FastAPI, Form
-from fastapi.responses import FileResponse
-from fastapi.middleware.wsgi import WSGIMiddleware
+# WebUI by mrfakename <X @realmrfakename / HF @mrfakename>
+# Demo also available on HF Spaces: https://huggingface.co/spaces/mrfakename/MeloTTS
 import gradio as gr
-import os, torch, io, uuid, tempfile, click
-from melo.api import TTS
-
+import os, torch, io
+# os.system('python -m unidic download')
 print("Make sure you've downloaded unidic (python -m unidic download) for this WebUI to work.")
-
+from melo.api import TTS
 speed = 1.0
-
+import tempfile
+import click
 device = 'auto'
 models = {
     'EN': TTS(language='EN', device=device),
@@ -18,7 +17,7 @@ models = {
     'JP': TTS(language='JP', device=device),
     'KR': TTS(language='KR', device=device),
 }
-speaker_ids = dict(models['EN'].hps.data.spk2id)  # Convert to regular dictionary
+speaker_ids = models['EN'].hps.data.spk2id
 
 default_text_dict = {
     'EN': 'The field of text-to-speech has seen rapid development recently.',
@@ -33,22 +32,12 @@ def synthesize(speaker, text, speed, language, progress=gr.Progress()):
     bio = io.BytesIO()
     models[language].tts_to_file(text, models[language].hps.data.spk2id[speaker], bio, speed=speed, pbar=progress.tqdm, format='wav')
     return bio.getvalue()
-
 def load_speakers(language, text):
     if text in list(default_text_dict.values()):
         newtext = default_text_dict[language]
     else:
         newtext = text
-    
-    # Get the speaker IDs dictionary for the selected language
-    speakers = dict(models[language].hps.data.spk2id)
-    speaker_list = list(speakers.keys())
-    
-    if not speaker_list:
-        raise ValueError(f"No speakers found for language {language}")
-    
-    return gr.update(value=speaker_list[0], choices=speaker_list), newtext
-
+    return gr.update(value=list(models[language].hps.data.spk2id.keys())[0], choices=list(models[language].hps.data.spk2id.keys())), newtext
 with gr.Blocks() as demo:
     gr.Markdown('# MeloTTS WebUI\n\nA WebUI for MeloTTS.')
     with gr.Group():
@@ -61,34 +50,12 @@ with gr.Blocks() as demo:
     aud = gr.Audio(interactive=False)
     btn.click(synthesize, inputs=[speaker, text, speed, language], outputs=[aud])
     gr.Markdown('WebUI by [mrfakename](https://twitter.com/realmrfakename).')
-
-# FastAPI for API access
-fastapi_app = FastAPI()
-
-@fastapi_app.post("/api/tts")
-async def generate_tts(text: str = Form(...), speaker: str = Form(...), language: str = Form('EN'), speed: float = Form(1.0)):
-    if language not in models:
-        return {"error": f"Language {language} not supported"}
-    
-    speakers = dict(models[language].hps.data.spk2id)
-    if speaker not in speakers:
-        return {"error": f"Speaker {speaker} not found for language {language}"}
-    
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-        output_path = tmp.name
-        models[language].tts_to_file(text, speakers[speaker], output_path, speed=speed)
-        return FileResponse(output_path, media_type='audio/wav', filename='output.wav')
-
-# Mount Gradio app on FastAPI
-fastapi_app.mount("/", WSGIMiddleware(demo))
-
 @click.command()
 @click.option('--share', '-s', is_flag=True, show_default=True, default=False, help="Expose a publicly-accessible shared Gradio link usable by anyone with the link. Only share the link with people you trust.")
-@click.option('--host', '-h', default="0.0.0.0")
-@click.option('--port', '-p', type=int, default=8888)
+@click.option('--host', '-h', default=None)
+@click.option('--port', '-p', type=int, default=None)
 def main(share, host, port):
-    import uvicorn
-    uvicorn.run(fastapi_app, host=host, port=port)
+    demo.queue(api_open=False).launch(show_api=False, share=share, server_name=host, server_port=port)
 
 if __name__ == "__main__":
     main()
