@@ -6,8 +6,18 @@ import os, torch, io
 from melo.api import TTS
 import tempfile
 import click
+import logging
 
-print("Make sure you've downloaded unidic (python -m unidic download) for this WebUI to work.")
+# ===== Logging Setup =====
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s"
+)
+logger = logging.getLogger(__name__)
+
+logger.info("build 1")
+logger.info("Make sure you've downloaded unidic (python -m unidic download) for this WebUI to work.")
+
 
 # ===== Gradio UI Setup =====
 device = 'auto'
@@ -31,6 +41,7 @@ default_text_dict = {
 }
 
 def synthesize(speaker, text, speed, language, progress=gr.Progress()):
+    """Gradio UI synthesis handler. Uses in-memory BytesIO."""
     bio = io.BytesIO()
     models[language].tts_to_file(
         text,
@@ -43,6 +54,7 @@ def synthesize(speaker, text, speed, language, progress=gr.Progress()):
     return bio.getvalue()
 
 def load_speakers(language, text):
+    """Update available speakers and default text based on selected language."""
     if text in list(default_text_dict.values()):
         newtext = default_text_dict[language]
     else:
@@ -82,25 +94,57 @@ def get_tts_model(body: TextModel):
     # Reuse models already loaded in memory!
     return models[body.language]
 
+@fastapi_app.get("/ping")
+async def ping():
+    return {"msg": "pong"}
+
 @fastapi_app.post("/convert/tts")
 async def create_upload_file(
         body: TextModel = Body(...),
         model: TTS = Depends(get_tts_model)
 ):
+    """
+    API endpoint for TTS. Accepts JSON body, validates, synthesizes audio,
+    saves to disk, and returns as a downloadable wav file.
+    """
     speaker_ids = model.hps.data.spk2id
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-        output_path = tmp.name
-        model.tts_to_file(
-            body.text, speaker_ids[body.speaker_id], output_path, speed=body.speed
-        )
-        return FileResponse(
-            output_path,
-            media_type="audio/mpeg",
-            filename=os.path.basename(output_path)
-        )
 
-# ===== Mount FastAPI API under /api =====
-demo.app.mount("/api", fastapi_app)
+    # Validate speaker_id
+    if body.speaker_id not in speaker_ids:
+        logger.error(f"[API] Invalid speaker_id '{body.speaker_id}'. Available: {list(speaker_ids.keys())}")
+        raise ValueError(f"Invalid speaker_id: {body.speaker_id}")
+
+    # Synthesize to memory first (safer; matches UI)
+    bio = io.BytesIO()
+    logger.info(f"[API] Synthesizing to memory for speaker {body.speaker_id}, language {body.language}")
+    model.tts_to_file(
+        body.text,
+        speaker_ids[body.speaker_id],
+        bio,
+        speed=body.speed,
+        format='wav'
+    )
+    bio.seek(0)
+
+    # Write memory buffer to disk for FileResponse
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+        tmp.write(bio.read())
+        tmp.flush()
+        os.fsync(tmp.fileno())
+        output_path = tmp.name
+        logger.info(f"[API] Wrote buffer to disk at {output_path}, size={os.path.getsize(output_path)}")
+
+    # Confirm file is not empty
+    if os.path.getsize(output_path) == 0:
+        logger.error("[API] Output wav file is empty after TTS!")
+    else:
+        logger.info("[API] Output wav file generated successfully.")
+
+    return FileResponse(
+        output_path,
+        media_type="audio/mpeg",
+        filename=os.path.basename(output_path)
+    )
 
 # ===== Main Entrypoint =====
 @click.command()
@@ -108,7 +152,10 @@ demo.app.mount("/api", fastapi_app)
 @click.option('--host', '-h', default=None)
 @click.option('--port', '-p', type=int, default=None)
 def main(share, host, port):
-    demo.queue(api_open=False).launch(show_api=False, share=share, server_name=host, server_port=port)
+    demo.queue(api_open=False)
+    demo.app.mount("/api", fastapi_app)
+    demo.launch(show_api=False, share=share, server_name=host, server_port=port)
 
 if __name__ == "__main__":
     main()
+

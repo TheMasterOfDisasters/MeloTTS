@@ -31,6 +31,17 @@ curl -X POST http://localhost:8888/api/tts \
 --output roxy_audio.wav
 ```
 
+### Check API - verbose
+```bash
+curl -v -X POST http://localhost:8888/api/convert/tts ^
+-H "Content-Type: application/json" ^
+-d "{\"text\": \"Hello from Roxy!\", \"speaker_id\": \"EN-US\", \"language\": \"EN\", \"speed\": 1.0}"
+```
+
+
+### Clean docker
+`docker system prune -a --volumes`
+
 ## Common Operations
 - Port 8888 is exposed for web interface
 - Use `--gpus all` only if NVIDIA drivers and Docker GPU support is installed
