@@ -1,11 +1,19 @@
+# Python cache and notebooks
 __pycache__/
 .ipynb_checkpoints/
+
+# Model and output folders
 basetts_outputs_use_bert/
 basetts_outputs/
-multilingual_ckpts
 basetts_outputs_package/
+multilingual_ckpts/
+
+# Build artifacts
 build/
 *.egg-info/
-
 *.zip
 *.wav
+
+# IntelliJ IDEA project folder
+.idea/
+.idea/*

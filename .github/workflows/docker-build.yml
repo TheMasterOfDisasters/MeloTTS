@@ -24,23 +24,23 @@ jobs:
       - name: Extract version if tag
         id: get_version
         run: |
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then
+            echo "VERSION=${GITHUB_REF##refs/tags/}" >> $GITHUB_ENV
           fi
 
-      - name: Print extracted version
-        run: echo "Version is $VERSION"
+      - name: Print version env
+        run: echo "VERSION=$VERSION"
 
       - name: Build Docker image
         run: |
           docker build -t ${{ secrets.DOCKER_USERNAME }}/melotts:latest .
-          if [[ -n "${{ env.VERSION }}" ]]; then
-            docker tag ${{ secrets.DOCKER_USERNAME }}/melotts:latest ${{ secrets.DOCKER_USERNAME }}/melotts:${{ env.VERSION }}
+          if [[ -n "$VERSION" ]]; then
+            docker tag ${{ secrets.DOCKER_USERNAME }}/melotts:latest ${{ secrets.DOCKER_USERNAME }}/melotts:$VERSION
           fi
 
       - name: Push Docker image
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/melotts:latest
-          if [[ -n "${{ env.VERSION }}" ]]; then
-            docker push ${{ secrets.DOCKER_USERNAME }}/melotts:${{ env.VERSION }}
+          if [[ -n "$VERSION" ]]; then
+            docker push ${{ secrets.DOCKER_USERNAME }}/melotts:$VERSION
           fi
