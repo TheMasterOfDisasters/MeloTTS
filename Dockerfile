@@ -10,4 +10,6 @@ RUN pip install -e .
 RUN python -m unidic download
 RUN python melo/init_downloads.py
 
+EXPOSE 8888
+
 CMD ["python", "./melo/app.py", "--host", "0.0.0.0", "--port", "8888"]
