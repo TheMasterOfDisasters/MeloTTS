@@ -6,10 +6,30 @@
 
 ## Docker Usage
 ### CPU Version
-docker run -p 8888:8888 sensejworld/melotts
+`docker run -p 8888:8888 sensejworld/melotts`
 
 ### GPU Version
-docker run --gpus all -p 8888:8888 sensejworld/melotts
+`docker run --gpus all -p 8888:8888 sensejworld/melotts`
+
+## Test locally
+### Build image  
+`docker build -t melotts:test .`
+
+### Run image  
+`docker run -p 8888:8888 --gpus all melotts:test`
+
+### Check UI
+Open http://localhost:8888
+
+### Check API
+```bash
+curl -X POST http://localhost:8888/api/tts \
+-F "text=Hello from Roxy!" \
+-F "speaker=EN-US" \
+-F "language=EN" \
+-F "speed=1.0" \
+--output roxy_audio.wav
+```
 
 ## Common Operations
 - Port 8888 is exposed for web interface
@@ -27,4 +47,5 @@ docker run --gpus all -p 8888:8888 sensejworld/melotts
 
 ### v0.0.2 (Planned)
 - Enable API calls together with UI
+- 
 
