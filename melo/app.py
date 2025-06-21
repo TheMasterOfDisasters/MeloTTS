@@ -1,13 +1,15 @@
 # WebUI by mrfakename <X @realmrfakename / HF @mrfakename>
 # Demo also available on HF Spaces: https://huggingface.co/spaces/mrfakename/MeloTTS
+
 import gradio as gr
 import os, torch, io
-# os.system('python -m unidic download')
-print("Make sure you've downloaded unidic (python -m unidic download) for this WebUI to work.")
 from melo.api import TTS
-speed = 1.0
 import tempfile
 import click
+
+print("Make sure you've downloaded unidic (python -m unidic download) for this WebUI to work.")
+
+# ===== Gradio UI Setup =====
 device = 'auto'
 models = {
     'EN': TTS(language='EN', device=device),
@@ -30,14 +32,26 @@ default_text_dict = {
 
 def synthesize(speaker, text, speed, language, progress=gr.Progress()):
     bio = io.BytesIO()
-    models[language].tts_to_file(text, models[language].hps.data.spk2id[speaker], bio, speed=speed, pbar=progress.tqdm, format='wav')
+    models[language].tts_to_file(
+        text,
+        models[language].hps.data.spk2id[speaker],
+        bio,
+        speed=speed,
+        pbar=progress.tqdm,
+        format='wav'
+    )
     return bio.getvalue()
+
 def load_speakers(language, text):
     if text in list(default_text_dict.values()):
         newtext = default_text_dict[language]
     else:
         newtext = text
-    return gr.update(value=list(models[language].hps.data.spk2id.keys())[0], choices=list(models[language].hps.data.spk2id.keys())), newtext
+    return gr.update(
+        value=list(models[language].hps.data.spk2id.keys())[0],
+        choices=list(models[language].hps.data.spk2id.keys())
+    ), newtext
+
 with gr.Blocks() as demo:
     gr.Markdown('# MeloTTS WebUI\n\nA WebUI for MeloTTS.')
     with gr.Group():
@@ -50,6 +64,45 @@ with gr.Blocks() as demo:
     aud = gr.Audio(interactive=False)
     btn.click(synthesize, inputs=[speaker, text, speed, language], outputs=[aud])
     gr.Markdown('WebUI by [mrfakename](https://twitter.com/realmrfakename).')
+
+# ===== FastAPI Setup =====
+from fastapi import FastAPI, Body, Depends
+from fastapi.responses import FileResponse
+from pydantic import BaseModel
+
+fastapi_app = FastAPI()
+
+class TextModel(BaseModel):
+    text: str
+    speed: float = 1.0
+    language: str = 'EN'
+    speaker_id: str = 'EN-US'
+
+def get_tts_model(body: TextModel):
+    # Reuse models already loaded in memory!
+    return models[body.language]
+
+@fastapi_app.post("/convert/tts")
+async def create_upload_file(
+        body: TextModel = Body(...),
+        model: TTS = Depends(get_tts_model)
+):
+    speaker_ids = model.hps.data.spk2id
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
+        output_path = tmp.name
+        model.tts_to_file(
+            body.text, speaker_ids[body.speaker_id], output_path, speed=body.speed
+        )
+        return FileResponse(
+            output_path,
+            media_type="audio/mpeg",
+            filename=os.path.basename(output_path)
+        )
+
+# ===== Mount FastAPI API under /api =====
+demo.app.mount("/api", fastapi_app)
+
+# ===== Main Entrypoint =====
 @click.command()
 @click.option('--share', '-s', is_flag=True, show_default=True, default=False, help="Expose a publicly-accessible shared Gradio link usable by anyone with the link. Only share the link with people you trust.")
 @click.option('--host', '-h', default=None)
