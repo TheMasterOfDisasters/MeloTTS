@@ -61,7 +61,6 @@ curl -v "http://localhost:8888/tts/speakers?language=EN"
 - Web interface on port 8888 (http://localhost:8888/)
 
 
-### v0.0.2 (Planned)
+### v0.0.2 (2024-06-22)
 - Enable API calls together with UI
-- 
 

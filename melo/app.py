@@ -12,7 +12,7 @@ from melo.api import TTS
 
 # ─── Configuration & Version Info ─────────────────────────────────────────────
 VERSION = os.getenv("APP_VERSION", "v0.0.2")
-BUILD_ID = os.getenv("BUILD_ID", "9")
+BUILD_ID = os.getenv("BUILD_ID", "10")
 
 # ─── Logging Setup ─────────────────────────────────────────────────────────────
 logging.basicConfig(
