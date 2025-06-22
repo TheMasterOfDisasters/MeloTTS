@@ -11,8 +11,8 @@ from pydantic import BaseModel
 from melo.api import TTS
 
 # ─── Configuration & Version Info ─────────────────────────────────────────────
-VERSION = os.getenv("APP_VERSION", "dev")
-BUILD_ID = os.getenv("BUILD_ID", "8")
+VERSION = os.getenv("APP_VERSION", "v0.0.2")
+BUILD_ID = os.getenv("BUILD_ID", "9")
 
 # ─── Logging Setup ─────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -117,11 +117,19 @@ gr_app = demo.app
 logger.info("Gradio app with queue initialized")
 
 # ─── Build Your TTS FastAPI ────────────────────────────────────────────────────
-tts_app = FastAPI()
+tts_app = FastAPI(
+    title="TTS Service API",
+    description="API documentation for the TTS service",
+    version=VERSION,
+    openapi_url="/tts/openapi.json",
+    docs_url="/tts/docs",
+    redoc_url="/tts/redoc"
+)
+logger.info("TTS OpenAPI docs available at /tts/docs and OpenAPI spec at /tts/openapi.json")
 
 # Handle Pydantic validation errors to return detailed messages
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 @tts_app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
@@ -154,33 +162,37 @@ async def convert_tts(
         body: TextModel = Body(...),
         model: TTS = Depends(get_model)
 ):
+    """
+    Convert text to speech and stream WAV bytes directly, without writing to disk.
+    """
     logger.info(f"/tts/convert/tts request: {body}")
     # Validate and retrieve speaker ID
     try:
         spk_id = model.hps.data.spk2id[body.speaker_id]
     except KeyError:
         logger.warning(f"Invalid speaker_id: {body.speaker_id}")
-        return {"error": f"Invalid speaker_id '{body.speaker_id}'"}, 400
+        return JSONResponse(status_code=400, content={"error": f"Invalid speaker_id '{body.speaker_id}'"})
 
-    # Write to temp WAV file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-        output_path = tmp.name
+    # Use in-memory buffer
+    bio = io.BytesIO()
     try:
         model.tts_to_file(
             body.text,
             spk_id,
-            output_path,
-            speed=body.speed
+            bio,
+            speed=body.speed,
+            format="wav"
         )
-        logger.info(f"TTS audio written to {output_path}")
-        return FileResponse(
-            output_path,
+        bio.seek(0)
+        logger.info(f"Streamed TTS audio for language={body.language}, speaker={body.speaker_id}")
+        return StreamingResponse(
+            bio,
             media_type="audio/wav",
-            filename=os.path.basename(output_path)
+            headers={"Content-Disposition": f"attachment; filename=tts_{body.language}.wav"}
         )
     except Exception as e:
         logger.error(f"Error during TTS generation: {e}")
-        return {"error": str(e)}, 500
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
 # ─── Additional TTS API Endpoints ─────────────────────────────────────────────
 @tts_app.get("/languages")
