@@ -26,12 +26,22 @@ Open http://localhost:8888
 curl -v http://localhost:8888/tts/ping
 ```
 
-### Check API
+### Check API - tts
 ```bash
 curl -v -X POST http://localhost:8888/tts/convert/tts ^
   -H "Content-Type: application/json" ^
   -d "{\"text\":\"Hello world. I wanted to test this and see if this works properly\",\"speed\":1.0,\"language\":\"EN\",\"speaker_id\":\"EN-BR\"}" ^
   --output hello.wav
+```
+
+### Check API - languages
+```bash
+curl -v http://localhost:8888/tts/languages
+```
+
+### Check API - languages
+```bash
+curl -v "http://localhost:8888/tts/speakers?language=EN"
 ```
 
 ### Clean docker
