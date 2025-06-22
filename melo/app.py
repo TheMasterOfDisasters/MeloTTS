@@ -12,7 +12,7 @@ from melo.api import TTS
 
 # ─── Configuration & Version Info ─────────────────────────────────────────────
 VERSION = os.getenv("APP_VERSION", "dev")
-BUILD_ID = os.getenv("BUILD_ID", "5")
+BUILD_ID = os.getenv("BUILD_ID", "6")
 
 # ─── Logging Setup ─────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -117,6 +117,18 @@ logger.info("Gradio app with queue initialized")
 # ─── Build Your TTS FastAPI ────────────────────────────────────────────────────
 tts_app = FastAPI()
 
+# Handle Pydantic validation errors to return detailed messages
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
+
+@tts_app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    logger.error(f"Validation error for path {request.url.path}: {exc}")
+    return JSONResponse(
+        status_code=422,
+        content={"detail": exc.errors()}
+    )
+
 class TextModel(BaseModel):
     text: str
     speed: float = 1.0
@@ -168,7 +180,7 @@ async def convert_tts(
         logger.error(f"Error during TTS generation: {e}")
         return {"error": str(e)}, 500
 
-# ─── Mount TTS API on Gradio App ─────────────────────────────────────────────────
+# ─── Mount TTS API on Gradio App ───────────────────────────────────────────────── ─────────────────────────────────────────────────
 gr_app.mount("/tts", tts_app)
 logger.info("Mounted TTS API at /tts on Gradio app")
 
