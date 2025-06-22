@@ -12,7 +12,7 @@ from melo.api import TTS
 
 # ─── Configuration & Version Info ─────────────────────────────────────────────
 VERSION = os.getenv("APP_VERSION", "dev")
-BUILD_ID = os.getenv("BUILD_ID", "6")
+BUILD_ID = os.getenv("BUILD_ID", "7")
 
 # ─── Logging Setup ─────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -107,6 +107,8 @@ with gr.Blocks() as demo:
         inputs=[speaker, text, speed, language],
         outputs=[audio_out]
     )
+    # Initialize speakers and default text on page load
+    demo.load(load_speakers, inputs=[language, text], outputs=[speaker, text])
 
 # ─── Enable Gradio Queue ───────────────────────────────────────────────────────
 logger.info("Enabling Gradio queue: default_concurrency_limit=4, api_open=False")
