@@ -12,7 +12,7 @@ from melo.api import TTS
 
 # ─── Configuration & Version Info ─────────────────────────────────────────────
 VERSION = os.getenv("APP_VERSION", "dev")
-BUILD_ID = os.getenv("BUILD_ID", "7")
+BUILD_ID = os.getenv("BUILD_ID", "8")
 
 # ─── Logging Setup ─────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -182,7 +182,25 @@ async def convert_tts(
         logger.error(f"Error during TTS generation: {e}")
         return {"error": str(e)}, 500
 
-# ─── Mount TTS API on Gradio App ───────────────────────────────────────────────── ─────────────────────────────────────────────────
+# ─── Additional TTS API Endpoints ─────────────────────────────────────────────
+@tts_app.get("/languages")
+async def list_languages():
+    """Return available languages."""
+    logger.info("/tts/languages request received")
+    return {"languages": LANGUAGES}
+
+@tts_app.get("/speakers")
+async def list_speakers(language: str):
+    """Return available speakers for a given language query parameter."""
+    logger.info(f"/tts/speakers request received for language={language}")
+    model = models.get(language)
+    if not model:
+        logger.warning(f"Requested speakers for unknown language: {language}")
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Language not found")
+    return {"speakers": list(model.hps.data.spk2id.keys())}
+
+# ─── Mount TTS API on Gradio App ─────────────────────────────────────────────────
 gr_app.mount("/tts", tts_app)
 logger.info("Mounted TTS API at /tts on Gradio app")
 

@@ -21,23 +21,18 @@
 ### Check UI
 Open http://localhost:8888
 
+### Check API - ping
+```bash
+curl -v http://localhost:8888/tts/ping
+```
+
 ### Check API
 ```bash
-curl -X POST http://localhost:8888/api/tts \
--F "text=Hello from Roxy!" \
--F "speaker=EN-US" \
--F "language=EN" \
--F "speed=1.0" \
---output roxy_audio.wav
+curl -v -X POST http://localhost:8888/tts/convert/tts ^
+  -H "Content-Type: application/json" ^
+  -d "{\"text\":\"Hello world. I wanted to test this and see if this works properly\",\"speed\":1.0,\"language\":\"EN\",\"speaker_id\":\"EN-BR\"}" ^
+  --output hello.wav
 ```
-
-### Check API - verbose
-```bash
-curl -v -X POST http://localhost:8888/api/convert/tts ^
--H "Content-Type: application/json" ^
--d "{\"text\": \"Hello from Roxy!\", \"speaker_id\": \"EN-US\", \"language\": \"EN\", \"speed\": 1.0}"
-```
-
 
 ### Clean docker
 `docker system prune -a --volumes`
