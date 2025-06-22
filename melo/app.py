@@ -1,14 +1,9 @@
 import gradio as gr
-import os, torch, io
-from melo.api import TTS
-import tempfile
-import click
-import logging
 from fastapi import FastAPI, Body, Depends
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
-
-fastapi_app = FastAPI()
+import os, io, tempfile, logging
+from melo.api import TTS
 
 logging.basicConfig(
     level=logging.INFO,
@@ -16,7 +11,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-logger.info("build 2")
+logger.info("build 11")  # or whatever version you want to call it
 logger.info("Make sure you've downloaded unidic (python -m unidic download) for this WebUI to work.")
 
 device = 'auto'
@@ -74,10 +69,8 @@ with gr.Blocks() as demo:
     btn.click(synthesize, inputs=[speaker, text, speed, language], outputs=[aud])
     gr.Markdown('WebUI by [mrfakename](https://twitter.com/realmrfakename).')
 
-
-@fastapi_app.get("/ping")
-async def ping():
-    return {"msg": "pong"}
+# ---- API AS SUB-APP ----
+api_app = FastAPI()
 
 class TextModel(BaseModel):
     text: str
@@ -88,52 +81,46 @@ class TextModel(BaseModel):
 def get_tts_model(body: TextModel):
     return models[body.language]
 
-@fastapi_app.post("/convert/tts")
+@api_app.post("/convert/tts")
 async def create_upload_file(
-        body: TextModel = Body(...),
-        model: TTS = Depends(get_tts_model)
+        body: TextModel = Body(...), model: TTS = Depends(get_tts_model)
 ):
     speaker_ids = model.hps.data.spk2id
     if body.speaker_id not in speaker_ids:
         logger.error(f"[API] Invalid speaker_id '{body.speaker_id}'. Available: {list(speaker_ids.keys())}")
         raise ValueError(f"Invalid speaker_id: {body.speaker_id}")
-    bio = io.BytesIO()
-    logger.info(f"[API] Synthesizing to memory for speaker {body.speaker_id}, language {body.language}")
-    model.tts_to_file(
-        body.text,
-        speaker_ids[body.speaker_id],
-        bio,
-        speed=body.speed,
-        format='wav'
-    )
-    bio.seek(0)
     with tempfile.NamedTemporaryFile(delete=False, suffix=".wav") as tmp:
-        tmp.write(bio.read())
-        tmp.flush()
-        os.fsync(tmp.fileno())
         output_path = tmp.name
-        logger.info(f"[API] Wrote buffer to disk at {output_path}, size={os.path.getsize(output_path)}")
-    if os.path.getsize(output_path) == 0:
-        logger.error("[API] Output wav file is empty after TTS!")
-    else:
-        logger.info("[API] Output wav file generated successfully.")
-    return FileResponse(
-        output_path,
-        media_type="audio/mpeg",
-        filename=os.path.basename(output_path)
-    )
+        model.tts_to_file(
+            body.text, speaker_ids[body.speaker_id], output_path, speed=body.speed
+        )
+        response = FileResponse(
+            output_path, media_type="audio/wav", filename=os.path.basename(output_path)
+        )
+    logger.info(f"[API] Served TTS for speaker {body.speaker_id}, language {body.language}")
+    return response
 
-@click.command()
-@click.option('--share', '-s', is_flag=True, show_default=True, default=False, help="Expose a publicly-accessible shared Gradio link usable by anyone with the link. Only share the link with people you trust.")
-@click.option('--host', '-h', default=None)
-@click.option('--port', '-p', type=int, default=None)
-def main(share, host, port):
-    logger.info("About to launch Gradio demo.")
-    demo.queue(api_open=False)
-    demo.launch(show_api=False, share=share, server_name=host, server_port=port)
-    logger.info("About to mount FastAPI.")
-    demo.app.mount("/v1", fastapi_app)
-    logger.info("Mounted FastAPI at /v1 after Gradio launch.")
+@api_app.get("/ping")
+async def ping():
+    return {"msg": "pong"}
+
+# ---- Mount API under /api ----
+
+
+def main():
+    logger.info("demo.queue")
+    queued = demo.queue(default_concurrency_limit=4, api_open=False)
+    logger.info("queued app mount")
+    queued.app.mount("/tts", api_app)
+    logger.info("for route")
+    for route in queued.app.routes:
+        logger.info(f"Route: {route.path} -> methods {route.methods}")
+    logger.info("Launch")
+    queued.launch(
+        show_api=False,
+        server_name="0.0.0.0",
+        server_port=8888,
+    )
 
 if __name__ == "__main__":
     main()
