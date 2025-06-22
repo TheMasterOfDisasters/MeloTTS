@@ -63,4 +63,5 @@ curl -v "http://localhost:8888/tts/speakers?language=EN"
 
 ### v0.0.2 (2024-06-22)
 - Enable API calls together with UI
+- run with `docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.2`
 
