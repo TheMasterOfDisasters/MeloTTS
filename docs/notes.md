@@ -64,4 +64,10 @@ curl -v "http://localhost:8888/tts/speakers?language=EN"
 ### v0.0.2 (2024-06-22)
 - Enable API calls together with UI
 - run with `docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.2`
+- run for english only `docker run -p 8888:8888 -e TTS_LANGUAGES=EN sensejworld/melotts:v0.0.2`
+- run for english and japanese `docker run -p 8888:8888 -e TTS_LANGUAGES=EN,JP sensejworld/melotts:v0.0.2`
+- run for english with gpu support named melotts_gpu_en `docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN --name melotts_gpu_en sensejworld/melotts:v0.0.2`
 
+### v0.0.3 (Planned)
+- Expose internal settings to api sdp_ratio, noise_scale, noise_scale_w
+- run with `docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.2`
