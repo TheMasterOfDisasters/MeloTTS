@@ -11,8 +11,8 @@ from pydantic import BaseModel
 from melo.api import TTS
 
 # ─── Configuration & Version Info ─────────────────────────────────────────────
-VERSION = os.getenv("APP_VERSION", "v0.0.2")
-BUILD_ID = os.getenv("BUILD_ID", "10")
+VERSION = os.getenv("APP_VERSION", "v0.0.3")
+BUILD_ID = os.getenv("BUILD_ID", "13")
 
 # ─── Logging Setup ─────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -36,7 +36,7 @@ for lang in LANGUAGES:
         logger.error(f"Failed to load model for {lang}: {e}")
 
 # ─── Gradio UI Callbacks ────────────────────────────────────────────────────────
-def synthesize(speaker: str, text: str, speed: float, language: str, progress=gr.Progress()):
+def synthesize(speaker: str, text: str, speed: float, language: str,  sdp_ratio: float = 0.2, noise_scale: float = 0.6, noise_scale_w: float = 0.8, progress=gr.Progress()):
     """
     Perform TTS synthesis, return WAV bytes.
     """
@@ -57,6 +57,9 @@ def synthesize(speaker: str, text: str, speed: float, language: str, progress=gr
             spk_id,
             bio,
             speed=speed,
+            sdp_ratio=sdp_ratio,
+            noise_scale=noise_scale,
+            noise_scale_w=noise_scale_w,
             pbar=progress.tqdm,
             format="wav"
         )
@@ -96,6 +99,9 @@ with gr.Blocks() as demo:
         speaker = gr.Dropdown([], label="Speaker")
     text = gr.Textbox(lines=3, label="Text")
     speed = gr.Slider(0.5, 2.0, value=1.0, label="Speed")
+    sdp_ratio = gr.Slider(0.0, 1.0, value=0.2, label="SDP Ratio")
+    noise_scale = gr.Slider(0.0, 1.5, value=0.6, label="Noise Scale")
+    noise_scale_w = gr.Slider(0.0, 1.5, value=0.8, label="Noise Scale W")
     btn = gr.Button("Synthesize")
     audio_out = gr.Audio(label="Output Audio")
 
@@ -104,7 +110,7 @@ with gr.Blocks() as demo:
     # Synthesis button
     btn.click(
         fn=synthesize,
-        inputs=[speaker, text, speed, language],
+        inputs=[speaker, text, speed, language, sdp_ratio, noise_scale, noise_scale_w],
         outputs=[audio_out]
     )
     # Initialize speakers and default text on page load
@@ -144,7 +150,9 @@ class TextModel(BaseModel):
     speed: float = 1.0
     language: str = "EN"
     speaker_id: str
-
+    sdp_ratio: float = 0.2
+    noise_scale: float = 0.6
+    noise_scale_w: float = 0.8
 
 def get_model(body: TextModel) -> TTS:
     model = models.get(body.language)
@@ -155,7 +163,12 @@ def get_model(body: TextModel) -> TTS:
 @tts_app.get("/ping")
 async def ping():
     logger.info("/tts/ping request received")
-    return {"msg": "pong"}
+    return {
+        "msg": "pong",
+        "type": "MeloTTS",
+        "version": VERSION,
+        "build_id": BUILD_ID
+    }
 
 @tts_app.post("/convert/tts")
 async def convert_tts(
@@ -181,6 +194,9 @@ async def convert_tts(
             spk_id,
             bio,
             speed=body.speed,
+            sdp_ratio=body.sdp_ratio,
+            noise_scale=body.noise_scale,
+            noise_scale_w=body.noise_scale_w,
             format="wav"
         )
         bio.seek(0)
