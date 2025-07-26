@@ -1,5 +1,9 @@
 # Development Notes
 
+##Tools
+
+    winget install --id=astral-sh.uv -e
+
 ## Version Management
 `git tag v0.0.2`  
 `git push origin v0.0.2`
@@ -51,6 +55,12 @@ curl -v "http://localhost:8888/tts/speakers?language=EN"
 - Port 8888 is exposed for web interface
 - Use `--gpus all` only if NVIDIA drivers and Docker GPU support is installed
 
+
+## Dependency management
+
+    winget install --id=astral-sh.uv -e
+    uv pip compile requirements.txt --resolution lowest --output-file requirements.txt
+
 ## Version History
 ### v0.0.1 (2025-06-21)
 `docker pull sensejworld/melotts:v0.0.1`
@@ -75,3 +85,7 @@ curl -v "http://localhost:8888/tts/speakers?language=EN"
 - Corrected faulty version dates
 - Updated documentation
 - run with `docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.3`
+
+### v0.0.4 (Upcoming)
+- Update some dependencies for performance gains
+- run with `docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.4`
