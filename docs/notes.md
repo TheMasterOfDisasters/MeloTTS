@@ -16,11 +16,16 @@
 `docker run --gpus all -p 8888:8888 sensejworld/melotts`
 
 ## Test locally
+
 ### Build image  
+You need docker to be working. (Example : Docker Desktop)  
 `docker build -t melotts:test .`
 
 ### Run image  
 `docker run -p 8888:8888 --gpus all melotts:test`
+
+### Run image - offline mode
+`docker run -p 8888:8888 -it --rm --gpus all --add-host=cdn-lfs.huggingface.co:127.0.0.1 --add-host=hf.co:127.0.0.1 --add-host=huggingface.co:127.0.0.1 --add-host=s3.amazonaws.com:127.0.0.1 --add-host=raw.githubusercontent.com:127.0.0.1 --add-host=git-lfs.github.com:127.0.0.1 --add-host=objects.githubusercontent.com:127.0.0.1 melotts:test`
 
 ### Check UI
 Open http://localhost:8888
@@ -60,32 +65,3 @@ curl -v "http://localhost:8888/tts/speakers?language=EN"
 
     winget install --id=astral-sh.uv -e
     uv pip compile requirements.txt --resolution lowest --output-file requirements.txt
-
-## Version History
-### v0.0.1 (2025-06-21)
-`docker pull sensejworld/melotts:v0.0.1`
-- Initial release
-- Basic TTS functionality
-- Support for English (Default, US, BR, India, AU)
-- Docker support for both CPU and GPU
-- Web interface on port 8888 (http://localhost:8888/)
-
-### v0.0.2 (2025-06-22)
-- Enable API calls together with UI
-- run with `docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.2`
-- run for english only `docker run -p 8888:8888 -e TTS_LANGUAGES=EN sensejworld/melotts:v0.0.2`
-- run for english and japanese `docker run -p 8888:8888 -e TTS_LANGUAGES=EN,JP sensejworld/melotts:v0.0.2`
-- run for english with gpu support named melotts_gpu_en `docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN --name melotts_gpu_en sensejworld/melotts:v0.0.2`
-
-### v0.0.3 (2025-07-25)
-- Optimized docker build to use layer caching so we can build stuff fast after the initial build
-- Expanded ping to include version and build
-- Expanded UI with sdp_ratio, noise_scale and noise_scale_w
-- Expanded API with sdp_ratio, noise_scale and noise_scale_w
-- Corrected faulty version dates
-- Updated documentation
-- run with `docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.3`
-
-### v0.0.4 (Upcoming)
-- Update some dependencies for performance gains
-- run with `docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.4`

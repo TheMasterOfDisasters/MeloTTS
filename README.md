@@ -1,62 +1,119 @@
-<div align="center">
-  <div>&nbsp;</div>
-  <img src="logo.png" width="300"/> <br>
-  <a href="https://trendshift.io/repositories/8133" target="_blank"><img src="https://trendshift.io/api/badge/repositories/8133" alt="myshell-ai%2FMeloTTS | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/></a>
-</div>
+# MeloTTS — Maintained & Easy-to-Use Fork 🛠️
 
-## Introduction
-MeloTTS is a **high-quality multi-lingual** text-to-speech library by [MIT](https://www.mit.edu/) and [MyShell.ai](https://myshell.ai). Supported languages include:
+This project is an independently maintained fork of the original [MeloTTS](https://github.com/myshell-ai/MeloTTS) by [Wenliang Zhao](https://github.com/wl-zhao), [Xumin Yu](https://github.com/yuxumin), and [Zengyi Qin](https://github.com/Zengyi-Qin).  
+The original work is licensed under the MIT License, and we thank the authors for their excellent research and contributions.
 
-| Language | Example |
-| --- | --- |
-| English (American)    | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/en/EN-US/speed_1.0/sent_000.wav) |
-| English (British)     | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/en/EN-BR/speed_1.0/sent_000.wav) |
-| English (Indian)      | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/en/EN_INDIA/speed_1.0/sent_000.wav) |
-| English (Australian)  | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/en/EN-AU/speed_1.0/sent_000.wav) |
-| English (Default)     | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/en/EN-Default/speed_1.0/sent_000.wav) |
-| Spanish               | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/es/ES/speed_1.0/sent_000.wav) |
-| French                | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/fr/FR/speed_1.0/sent_000.wav) |
-| Chinese (mix EN)      | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/zh/ZH/speed_1.0/sent_008.wav) |
-| Japanese              | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/jp/JP/speed_1.0/sent_000.wav) |
-| Korean                | [Link](https://myshell-public-repo-host.s3.amazonaws.com/myshellttsbase/examples/kr/KR/speed_1.0/sent_000.wav) |
+While the original MeloTTS is an impressive research project, this fork focuses on **making it simple to run and integrate** — with a working Docker image, included UI, and API support.
 
-Some other features include:
-- The Chinese speaker supports `mixed Chinese and English`.
-- Fast enough for `CPU real-time inference`.
+It’s designed so that you can:
+- Pull the Docker image
+- Run it instantly
+- Start synthesizing speech via UI or API without hunting down dependencies
 
-## Usage
-- [Use without Installation](docs/quick_use.md)
-- [Install and Use Locally](docs/install.md)
-- [Training on Custom Dataset](docs/training.md)
+⚠️ **Note:**  This project is maintained for usability and convenience by a single developer (with a different primary tech stack).  
+It is **not** a production-hardened system and may require additional work for deployment in critical environments.
 
-The Python API and model cards can be found in [this repo](https://github.com/myshell-ai/MeloTTS/blob/main/docs/install.md#python-api) or on [HuggingFace](https://huggingface.co/myshell-ai).
+✅ **Offline Mode:** Supported — provided that models are baked into the Docker image or mounted via a volume.  
+If running in a fully offline environment, ensure all required model files are available locally before starting the container.
 
-**Contributing**
+🤝 **Contributions Welcome:** If you find bugs, have ideas, or want to improve things, feel free to submit issues or pull requests. Every bit of help makes this project better for everyone.
 
-If you find this work useful, please consider contributing to this repo.
+---
 
-- Many thanks to [@fakerybakery](https://github.com/fakerybakery) for adding the Web UI and CLI part.
+## 🆘 Support & Issues
+If you encounter bugs, have feature requests, or need help using MeloTTS:
+- Please open a new [GitHub Issue](https://github.com/TheMasterOfDisasters/MeloTTS/issues) with as much detail as possible
+- Include error messages, logs, and reproduction steps if applicable
+- For general questions or ideas, you can also use the [Discussions](https://github.com/TheMasterOfDisasters/MeloTTS/discussions) tab
 
-## Authors
+---
 
-- [Wenliang Zhao](https://wl-zhao.github.io) at Tsinghua University
-- [Xumin Yu](https://yuxumin.github.io) at Tsinghua University
-- [Zengyi Qin](https://www.qinzy.tech) (project lead) at MIT and MyShell
+## 🚀 Quick Start
 
-**Citation**
-```
-@software{zhao2024melo,
-  author={Zhao, Wenliang and Yu, Xumin and Qin, Zengyi},
-  title = {MeloTTS: High-quality Multi-lingual Multi-accent Text-to-Speech},
-  url = {https://github.com/myshell-ai/MeloTTS},
-  year = {2023}
-}
+```bash
+docker run -p 8888:8888 --gpus all sensejworld/melotts:latest
 ```
 
-## License
+Then open: **[http://localhost:8888](http://localhost:8888)**
 
-This library is under MIT License, which means it is free for both commercial and non-commercial use.
+---
 
-## Acknowledgements
+## 🌐 API Usage Example
 
-This implementation is based on [TTS](https://github.com/coqui-ai/TTS), [VITS](https://github.com/jaywalnut310/vits), [VITS2](https://github.com/daniilrobnikov/vits2) and [Bert-VITS2](https://github.com/fishaudio/Bert-VITS2). We appreciate their awesome work.
+```bash
+curl -X POST "http://localhost:8888/api/tts"   -F "text=Hello world!"   -F "language=EN"   -o output.wav
+```
+
+---
+
+## 📦 Docker Features
+- Pinned dependencies for reproducible builds
+- Preloaded models for instant offline use (optional)
+- GPU acceleration when available
+- HTTP API + web UI in one container
+
+---
+
+## 🐳 Docker Hub
+You can explore all available MeloTTS container images on [Docker Hub](https://hub.docker.com/r/sensejworld/melotts/tags).
+
+This is useful if you want to:
+- Select a specific version of MeloTTS for compatibility
+- Check the latest available builds before pulling
+- Verify image tags for deployment
+
+---
+
+## 📜 Version History
+
+### v0.0.5 (Planned)
+- Add V2 models
+- Add V3 models
+
+### v0.0.4 (Upcoming)
+- Update some dependencies for performance gains
+- Improve offline support. Now all baked in.
+- Added ability to overwrite baked in models. Use `MELOTTTS_MODELS` with path to your model folder.
+- run with `docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.4`
+
+### v0.0.3 (2025-07-25)
+- Optimized docker build to use layer caching so we can build stuff fast after the initial build
+- Expanded ping to include version and build
+- Expanded UI with sdp_ratio, noise_scale and noise_scale_w
+- Expanded API with sdp_ratio, noise_scale and noise_scale_w
+- Corrected faulty version dates
+- Updated documentation
+- run with `docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.3`
+
+### v0.0.2 (2025-06-22)
+- Enable API calls together with UI
+- run with `docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.2`
+- run for english only `docker run -p 8888:8888 -e TTS_LANGUAGES=EN sensejworld/melotts:v0.0.2`
+- run for english and japanese `docker run -p 8888:8888 -e TTS_LANGUAGES=EN,JP sensejworld/melotts:v0.0.2`
+- run for english with gpu support named melotts_gpu_en `docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN --name melotts_gpu_en sensejworld/melotts:v0.0.2`
+
+### v0.0.1 (2025-06-21)
+`docker pull sensejworld/melotts:v0.0.1`
+- Initial release
+- Basic TTS functionality
+- Support for English (Default, US, BR, India, AU)
+- Docker support for both CPU and GPU
+- Web interface on port 8888 (http://localhost:8888/)
+
+---
+
+## 🛠 Developer Notes
+If you’re interested in building MeloTTS locally, testing changes, or working directly on the codebase, I have included additional technical details and tips in [`notes.md`](./docs/notes.md).
+
+This file contains guidance for:
+- Local environment setup
+- Dependency management
+- Testing workflows
+- Build & Docker optimization notes
+
+---
+
+## 📜 License
+
+This fork is licensed under the [MIT License](LICENSE).  
+Original work by Wenliang Zhao, Xumin Yu, and Zengyi Qin in [MeloTTS](https://github.com/myshell-ai/MeloTTS).

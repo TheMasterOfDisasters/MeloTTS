@@ -1,3 +1,4 @@
+
 import torch
 import os
 from . import utils
@@ -41,26 +42,63 @@ LANG_TO_HF_REPO_ID = {
     'KR': 'myshell-ai/MeloTTS-Korean',
 }
 
+def _check_offline_path(language, filename):
+    root_dir = os.getenv("MELOTTTS_MODELS")
+    if not root_dir:
+        return None
+    # Expected structure: <root>/models/<LANG>/<type>/<file>
+    if filename == "checkpoint.pth":
+        candidate = os.path.join(root_dir, "models", language, "model", filename)
+    elif filename == "config.json":
+        candidate = os.path.join(root_dir, "models", language, "config", filename)
+    else:
+        return None
+
+    if os.path.exists(candidate):
+        print(f"[INFO] Using local {filename} from {candidate}")
+        return candidate
+    else:
+        raise FileNotFoundError(
+            f"[ERROR] Expected {filename} for language {language} at {candidate}, "
+            "but file was not found. Please ensure the offline model structure is correct."
+        )
+
 def load_or_download_config(locale, use_hf=True, config_path=None):
+    language = locale.split('-')[0].upper()
+
     if config_path is None:
-        language = locale.split('-')[0].upper()
-        if use_hf:
-            assert language in LANG_TO_HF_REPO_ID
-            config_path = hf_hub_download(repo_id=LANG_TO_HF_REPO_ID[language], filename="config.json")
+        # First try offline mode
+        offline_config = _check_offline_path(language, "config.json")
+        if offline_config:
+            config_path = offline_config
         else:
-            assert language in DOWNLOAD_CONFIG_URLS
-            config_path = cached_path(DOWNLOAD_CONFIG_URLS[language])
+            # Online fallback
+            if use_hf:
+                assert language in LANG_TO_HF_REPO_ID
+                config_path = hf_hub_download(repo_id=LANG_TO_HF_REPO_ID[language], filename="config.json")
+            else:
+                assert language in DOWNLOAD_CONFIG_URLS
+                config_path = cached_path(DOWNLOAD_CONFIG_URLS[language])
+
     return utils.get_hparams_from_file(config_path)
 
 def load_or_download_model(locale, device, use_hf=True, ckpt_path=None):
+    language = locale.split('-')[0].upper()
+
     if ckpt_path is None:
-        language = locale.split('-')[0].upper()
-        if use_hf:
-            assert language in LANG_TO_HF_REPO_ID
-            ckpt_path = hf_hub_download(repo_id=LANG_TO_HF_REPO_ID[language], filename="checkpoint.pth")
+        # First try offline mode
+        offline_ckpt = _check_offline_path(language, "checkpoint.pth")
+        if offline_ckpt:
+            ckpt_path = offline_ckpt
         else:
-            assert language in DOWNLOAD_CKPT_URLS
-            ckpt_path = cached_path(DOWNLOAD_CKPT_URLS[language])
+            # Online fallback
+            if use_hf:
+                assert language in LANG_TO_HF_REPO_ID
+                ckpt_path = hf_hub_download(repo_id=LANG_TO_HF_REPO_ID[language], filename="checkpoint.pth")
+            else:
+                assert language in DOWNLOAD_CKPT_URLS
+                ckpt_path = cached_path(DOWNLOAD_CKPT_URLS[language])
+
     return torch.load(ckpt_path, map_location=device)
 
 def load_pretrain_model():
