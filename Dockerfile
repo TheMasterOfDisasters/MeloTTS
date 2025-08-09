@@ -1,4 +1,7 @@
-FROM python:3.9-slim
+# ============================================================
+# Stage 1: Build environment with dependencies and models
+# ============================================================
+FROM python:3.9-slim AS builder
 
 WORKDIR /app
 
@@ -22,6 +25,28 @@ COPY . .
 RUN pip install -e .
 
 RUN python melo/init_downloads.py
+
+# Remove unneeded model formats from Hugging Face cache
+RUN find /root/.cache/huggingface/hub/models--* \
+    -type f \
+    \( -name "*.h5" -o -name "*.tflite" -o -name "tf_model*" -o -name "*.onnx" -o -name "rust_model*" -o -name "*.msgpack" \) \
+    -exec rm -f {} +
+
+# ============================================================
+# Stage 2: Final runtime image
+# ============================================================
+FROM python:3.9-slim
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y \
+    build-essential libsndfile1 curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /usr/local /usr/local
+COPY --from=builder /app /app
+COPY --from=builder /root/.cache/huggingface /root/.cache/huggingface
+COPY --from=builder /root/nltk_data /root/nltk_data
 
 # Expose port and run the app
 EXPOSE 8888

@@ -70,13 +70,16 @@ This is useful if you want to:
 - Add V2 models
 - Add V3 models
 
-### v0.0.4 (Upcoming)
-- Update some dependencies for performance gains
-- Improve offline support. Now all baked in.
-- Added ability to overwrite baked in models. Use `MELOTTTS_MODELS` with path to your model folder.
-- run with `docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.4`
+### v0.0.4 (09.08.2025)
+- **Dependency updates** for improved performance and stability.
+- **Full offline support** — all required models are now baked into the image.
+- **Model overwrite option**: set `MELOTTS_MODELS` to point to your custom model folder.
+- **Smaller image size** via optimized multi-stage Docker build.
+- Run with:
+  ```bash
+  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.4
 
-### v0.0.3 (2025-07-25)
+### v0.0.3 (25.07.2025)
 - Optimized docker build to use layer caching so we can build stuff fast after the initial build
 - Expanded ping to include version and build
 - Expanded UI with sdp_ratio, noise_scale and noise_scale_w
@@ -85,14 +88,14 @@ This is useful if you want to:
 - Updated documentation
 - run with `docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.3`
 
-### v0.0.2 (2025-06-22)
+### v0.0.2 (22.06.2025)
 - Enable API calls together with UI
 - run with `docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.2`
 - run for english only `docker run -p 8888:8888 -e TTS_LANGUAGES=EN sensejworld/melotts:v0.0.2`
 - run for english and japanese `docker run -p 8888:8888 -e TTS_LANGUAGES=EN,JP sensejworld/melotts:v0.0.2`
 - run for english with gpu support named melotts_gpu_en `docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN --name melotts_gpu_en sensejworld/melotts:v0.0.2`
 
-### v0.0.1 (2025-06-21)
+### v0.0.1 (21.06.2025)
 `docker pull sensejworld/melotts:v0.0.1`
 - Initial release
 - Basic TTS functionality

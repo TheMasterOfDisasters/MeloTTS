@@ -37,10 +37,13 @@ For a complete walkthrough, including setup tips and explanations for non-develo
 - Add V3 models
 
 ### v0.0.4 (Upcoming)
-- Update some dependencies for performance gains
-- Improve offline support. Now all baked in.
-- Added ability to overwrite baked in models. Use `MELOTTTS_MODELS` with path to your model folder.
-- run with `docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.4`
+- **Dependency updates** for improved performance and stability.
+- **Full offline support** — all required models are now baked into the image.
+- **Model overwrite option**: set `MELOTTS_MODELS` to point to your custom model folder.
+- **Smaller image size** via optimized multi-stage Docker build.
+- Run with:
+  ```bash
+  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.4
 
 ### v0.0.3 (2025-07-25)
 - Optimized docker build to use layer caching so we can build stuff fast after the initial build

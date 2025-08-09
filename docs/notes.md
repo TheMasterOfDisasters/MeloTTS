@@ -27,6 +27,12 @@ You need docker to be working. (Example : Docker Desktop)
 ### Run image - offline mode
 `docker run -p 8888:8888 -it --rm --gpus all --add-host=cdn-lfs.huggingface.co:127.0.0.1 --add-host=hf.co:127.0.0.1 --add-host=huggingface.co:127.0.0.1 --add-host=s3.amazonaws.com:127.0.0.1 --add-host=raw.githubusercontent.com:127.0.0.1 --add-host=git-lfs.github.com:127.0.0.1 --add-host=objects.githubusercontent.com:127.0.0.1 melotts:test`
 
+### Run image - english only
+`docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN melotts:test`
+
+### Investigate image without running it (Used to slim the image and see files)
+`docker run -it --rm --entrypoint bash sensejworld/melotts:latest`
+
 ### Check UI
 Open http://localhost:8888
 
