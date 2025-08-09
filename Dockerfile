@@ -24,13 +24,12 @@ COPY . .
 
 RUN pip install -e .
 
-RUN python melo/init_downloads.py
-
-# Remove unneeded model formats from Hugging Face cache
-RUN find /root/.cache/huggingface/hub/models--* \
-    -type f \
-    \( -name "*.h5" -o -name "*.tflite" -o -name "tf_model*" -o -name "*.onnx" -o -name "rust_model*" -o -name "*.msgpack" \) \
-    -exec rm -f {} +
+# Download and remove unneeded model formats from Hugging Face cache
+RUN python melo/init_downloads.py && \
+    find /root/.cache/huggingface/hub/models--* \
+        -type f \
+        \( -name "*.h5" -o -name "*.tflite" -o -name "tf_model*" -o -name "*.onnx" -o -name "rust_model*" -o -name "*.msgpack" \) \
+        -exec rm -f {} +
 
 # ============================================================
 # Stage 2: Final runtime image
