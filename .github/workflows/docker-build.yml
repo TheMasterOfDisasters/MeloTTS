@@ -55,6 +55,9 @@ jobs:
             docker tag ${{ secrets.DOCKER_USERNAME }}/melotts:latest ${{ secrets.DOCKER_USERNAME }}/melotts:$VERSION
           fi
 
+      - name: Check remaining disk space
+        run: df -h
+
       - name: Push Docker image
         run: |
           docker push ${{ secrets.DOCKER_USERNAME }}/melotts:latest
