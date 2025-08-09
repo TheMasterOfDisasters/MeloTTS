@@ -1,42 +1,70 @@
 # 🗣️ MeloTTS WebUI & API (Docker)
-This image provides a ready-to-run container for the [MeloTTS](https://github.com/TheMasterOfDisasters/MeloTTS) project, exposing both a Web UI and an HTTP API.
 
-Image will be expanded with integration towards local models in mind.
-
-If you have any issues or suggestions for improvement, please create issue in GitHub.
+This is an independently maintained fork of the original [MeloTTS](https://github.com/myshell-ai/MeloTTS), focusing on making it **easy to run, integrate, and test** without deep technical setup.
 
 ## ✅ Features
 - Multilingual TTS: EN, ES, FR, ZH, JP, KR
 - Web interface (Gradio) on `/`
 - HTTP API on `/tts/convert/tts`
 - Docker-ready for local or cloud use
+- GPU acceleration when available
+- Optional offline mode with preloaded models
 
 ## 🚀 Quick Start
-### CPU :
--  ```bash 
-    docker run -p 8888:8888 sensejworld/melotts
+**CPU:**
+```bash
+docker run -p 8888:8888 sensejworld/melotts
+```
 
-### NVIDIA :
--  ```bash 
-    docker run -p 8888:8888 --gpus all sensejworld/melotts
+**NVIDIA GPU:**
+```bash
+docker run -p 8888:8888 --gpus all sensejworld/melotts
+```
 
-### English only :
--  ```bash 
-    docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN sensejworld/melotts
+**English only:**
+```bash
+docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN sensejworld/melotts
+```
 
-Visit: http://localhost:8888 for the UI  (Remember first synthesize might take up to 1 minute, after that its very fast)
+Visit: [http://localhost:8888](http://localhost:8888) for the UI.  
+*(First synthesis may take up to 1 minute — after that, it's very fast.)*
 
-### 📡 API Usage
--  ```bash
-    curl -v -X POST http://localhost:8888/tts/convert/tts ^
-    -H "Content-Type: application/json" ^
-    -d "{\"text\":\"Hello world. I wanted to test this and see if this works properly\",\"speed\":1.0,\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"sdp_ratio\":\"0.21\",\"noise_scale\":\"0.61\",\"noise_scale_w\":\"0.81\"}" ^
-    --output hello.wav
+### 📡 API Usage Examples
+**Simple:**
+```bash
+curl -X POST "http://localhost:8888/tts/convert/tts" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"text\":\"Hello world. I wanted to test this and see if this works properly\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\"}" ^
+  -o hello.wav
+```
 
-## 📘 Full Walkthrough & Notes
-For a complete walkthrough, including setup tips and explanations for non-developers, check out the full guide in [`docs/notes.md`](https://github.com/TheMasterOfDisasters/MeloTTS/blob/main/docs/notes.md). 💬
+**Advanced:**
+```bash
+curl -v -X POST http://localhost:8888/tts/convert/tts ^
+  -H "Content-Type: application/json" ^
+  -d "{\"text\":\"Hello world. I wanted to test this and see if this works properly\",\"speed\":1.0,\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"sdp_ratio\":\"0.21\",\"noise_scale\":\"0.61\",\"noise_scale_w\":\"0.81\"}" ^
+  --output hello.wav
+```
 
-**Note from the creator**: I'm not a Python expert, and I wrote this mostly to help myself and others who might struggle with technical docs or coding. So, if anything seems over-explained, that's on purpose! 😊 My goal is to make this project accessible and functional for everyone.
+
+## 🆘 Support & Issues
+If you encounter a bug, have a feature request, or want to contribute:
+- 📄 Open a **[GitHub Issue](https://github.com/TheMasterOfDisasters/MeloTTS/issues)** with full details (logs, commands used, reproduction steps)
+- 💬 Start a discussion in the **[GitHub Discussions](https://github.com/TheMasterOfDisasters/MeloTTS/discussions)** tab for ideas or questions
+- 🛠 Check **[Known Issues](https://github.com/TheMasterOfDisasters/MeloTTS/issues?q=is%3Aissue+is%3Aopen+label%3Abug)** before reporting
+
+I respond fastest on GitHub — Docker Hub comments aren’t monitored regularly.
+
+### 🔗 Common Help Topics
+- **[ReadMe](https://github.com/TheMasterOfDisasters/MeloTTS/blob/main/README.md)**
+- **[Technical Readme](https://github.com/TheMasterOfDisasters/MeloTTS/blob/main/docs/notes.md)**
+
+
+## 📦 Docker Hub Tags
+View all available builds: [sensejworld/melotts — Tags](https://hub.docker.com/r/sensejworld/melotts/tags)
+
+
+---
 
 ## 📜 Version History
 
@@ -70,13 +98,13 @@ For a complete walkthrough, including setup tips and explanations for non-develo
 - run with
   ```bash 
   docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.2`
-- run for english only 
+- run for english only
     ```bash 
     docker run -p 8888:8888 -e TTS_LANGUAGES=EN sensejworld/melotts:v0.0.2`
-- run for english and japanese 
+- run for english and japanese
     ```bash 
     docker run -p 8888:8888 -e TTS_LANGUAGES=EN,JP sensejworld/melotts:v0.0.2`
-- run for english with gpu support named melotts_gpu_en 
+- run for english with gpu support named melotts_gpu_en
     ```bash 
     docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN --name melotts_gpu_en sensejworld/melotts:v0.0.2`
 
@@ -93,3 +121,6 @@ For a complete walkthrough, including setup tips and explanations for non-develo
 ---
 
 
+## 📜 License
+This fork is licensed under the MIT License.  
+Original work by Wenliang Zhao, Xumin Yu, and Zengyi Qin in [MeloTTS](https://github.com/myshell-ai/MeloTTS).
