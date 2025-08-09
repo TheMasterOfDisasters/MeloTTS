@@ -69,6 +69,7 @@ This is useful if you want to:
 ### v0.0.5 (Planned)
 - Add V2 models
 - Add V3 models
+- Create new repo (Melotts-base) with image containing models so build have more space in the future
 
 ### v0.0.4 (09.08.2025)
 - **Dependency updates** for improved performance and stability.
@@ -86,22 +87,34 @@ This is useful if you want to:
 - Expanded API with sdp_ratio, noise_scale and noise_scale_w
 - Corrected faulty version dates
 - Updated documentation
-- run with `docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.3`
+- Run with:
+  ```bash
+  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.3`
 
 ### v0.0.2 (22.06.2025)
 - Enable API calls together with UI
-- run with `docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.2`
-- run for english only `docker run -p 8888:8888 -e TTS_LANGUAGES=EN sensejworld/melotts:v0.0.2`
-- run for english and japanese `docker run -p 8888:8888 -e TTS_LANGUAGES=EN,JP sensejworld/melotts:v0.0.2`
-- run for english with gpu support named melotts_gpu_en `docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN --name melotts_gpu_en sensejworld/melotts:v0.0.2`
+- run with
+  ```bash 
+  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.2`
+- run for english only
+    ```bash 
+    docker run -p 8888:8888 -e TTS_LANGUAGES=EN sensejworld/melotts:v0.0.2`
+- run for english and japanese
+    ```bash 
+    docker run -p 8888:8888 -e TTS_LANGUAGES=EN,JP sensejworld/melotts:v0.0.2`
+- run for english with gpu support named melotts_gpu_en
+    ```bash 
+    docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN --name melotts_gpu_en sensejworld/melotts:v0.0.2`
 
 ### v0.0.1 (21.06.2025)
-`docker pull sensejworld/melotts:v0.0.1`
 - Initial release
 - Basic TTS functionality
 - Support for English (Default, US, BR, India, AU)
 - Docker support for both CPU and GPU
 - Web interface on port 8888 (http://localhost:8888/)
+- Run with
+  ```bash 
+  docker pull sensejworld/melotts:v0.0.1`
 
 ---
 
