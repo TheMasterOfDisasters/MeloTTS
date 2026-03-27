@@ -1,6 +1,5 @@
 from melo.api import TTS
 import os
-import glob
 import sys
 
 

@@ -1,11 +1,9 @@
 import io
 import os
-import tempfile
 import logging
 
 import gradio as gr
 from fastapi import FastAPI, Body, Depends
-from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from melo.api import TTS
