@@ -23,7 +23,11 @@ logger.info(f"Starting TTS UI+API App - Version: {VERSION}, Build: {BUILD_ID}")
 
 # ─── Load Your TTS Models ───────────────────────────────────────────────────────
 DEVICE = "auto"
-LANGUAGES = os.getenv("TTS_LANGUAGES", "EN,ES,FR,ZH,JP,KR").split(",")
+LANGUAGES = [
+    lang.strip()
+    for lang in os.getenv("TTS_LANGUAGES", "EN,EN_V2,EN_NEWEST,ES,FR,ZH,JP,KR").split(",")
+    if lang.strip()
+]
 logger.info(f"Loading models for languages: {LANGUAGES}")
 models = {}
 for lang in LANGUAGES:
@@ -80,6 +84,8 @@ def load_speakers(language: str, text: str):
     speakers = list(model.hps.data.spk2id.keys())
     defaults = {
         "EN": "The field of text-to-speech has seen rapid development recently.",
+        "EN_V2": "The field of text-to-speech has seen rapid development recently.",
+        "EN_NEWEST": "The field of text-to-speech has seen rapid development recently.",
         "ES": "El campo de síntesis de voz ha experimentado un rápido desarrollo recientemente.",
         "FR": "Le domaine de la synthèse vocale a connu un développement rapide récemment.",
         "ZH": "最近，文本到语音领域发展迅速。",

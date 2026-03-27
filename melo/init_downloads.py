@@ -5,7 +5,7 @@ if __name__ == '__main__':
     device = 'auto'
 
     # Step 1: Preload all TTS voice models
-    languages = ['EN', 'ES', 'FR', 'ZH', 'JP', 'KR']
+    languages = ['EN', 'EN_V2', 'EN_NEWEST', 'ES', 'FR', 'ZH', 'JP', 'KR']
     models = {lang: TTS(language=lang, device=device) for lang in languages}
 
     # Step 2: Preload all BERT models used for text encoding

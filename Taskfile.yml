@@ -7,7 +7,7 @@ vars:
   CONTAINER_FULL: melotts_full
   CONTAINER_LOCAL: melotts_local
   LANG_EN: EN
-  LANG_FULL: EN,ES,FR,ZH,JP,KR
+  LANG_FULL: EN,EN_V2,EN_NEWEST,ES,FR,ZH,JP,KR
   TEMP_WAV: '%TEMP%\\melotts_task.wav'
 
 tasks:

@@ -7,7 +7,7 @@ import os
 @click.argument('text')
 @click.argument('output_path')
 @click.option("--file", '-f', is_flag=True, show_default=True, default=False, help="Text is a file")
-@click.option('--language', '-l', default='EN', help='Language, defaults to English', type=click.Choice(['EN', 'ES', 'FR', 'ZH', 'JP', 'KR'], case_sensitive=False))
+@click.option('--language', '-l', default='EN', help='Language, defaults to English', type=click.Choice(['EN', 'EN_V2', 'EN_NEWEST', 'ES', 'FR', 'ZH', 'JP', 'KR'], case_sensitive=False))
 @click.option('--speaker', '-spk', default='EN-Default', help='Speaker ID, only for English, leave empty for default, ignored if not English. If English, defaults to "EN-Default"', type=click.Choice(['EN-Default', 'EN-US', 'EN-BR', 'EN_INDIA', 'EN-AU']))
 @click.option('--speed', '-s', default=1.0, help='Speed, defaults to 1.0', type=float)
 @click.option('--device', '-d', default='auto', help='Device, defaults to auto')
@@ -23,12 +23,13 @@ def main(text, file, output_path, language, speaker, speed, device):
     language = language.upper()
     if language == '': language = 'EN'
     if speaker == '': speaker = None
-    if (not language == 'EN') and speaker:
-        warnings.warn('You specified a speaker but the language is English.')
+    is_english_variant = language in ['EN', 'EN_V2', 'EN_NEWEST']
+    if (not is_english_variant) and speaker:
+        warnings.warn('You specified a speaker but selected a non-English language; speaker choice will be ignored.')
     from melo.api import TTS
     model = TTS(language=language, device=device)
     speaker_ids = model.hps.data.spk2id
-    if language == 'EN':
+    if is_english_variant:
         if not speaker: speaker = 'EN-Default'
         spkr = speaker_ids[speaker]
     else:
