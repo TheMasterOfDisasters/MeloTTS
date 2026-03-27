@@ -1,6 +1,6 @@
 # 🗣️ MeloTTS WebUI & API (Docker)
 
-This is an independently maintained fork of the original [MeloTTS](https://github.com/myshell-ai/MeloTTS), focusing on making it **easy to run, integrate, and test** without deep technical setup.
+This is an [independently maintained fork](https://github.com/TheMasterOfDisasters/MeloTTS) of the original [MeloTTS](https://github.com/myshell-ai/MeloTTS), focusing on making it **easy to run, integrate, and test** without deep technical setup.
 
 ## ✅ Features
 - Multilingual TTS: EN, ES, FR, ZH, JP, KR

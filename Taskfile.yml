@@ -1,0 +1,77 @@
+version: '3'
+
+vars:
+  IMAGE: melotts:test
+  PORT: '8888'
+  CONTAINER_EN: melotts_en
+  CONTAINER_FULL: melotts_full
+  CONTAINER_LOCAL: melotts_local
+  LANG_EN: EN
+  LANG_FULL: EN,ES,FR,ZH,JP,KR
+  TEMP_WAV: '%TEMP%\\melotts_task.wav'
+
+tasks:
+  image:
+    desc: Build local MeloTTS Docker image
+    cmds:
+      - cmd /c docker build -t {{.IMAGE}} .
+
+  imagerun:
+    desc: Run existing image with English only
+    cmds:
+      - cmd /c docker rm -f {{.CONTAINER_FULL}} >nul 2>&1
+      - cmd /c docker rm -f {{.CONTAINER_EN}} >nul 2>&1
+      - cmd /c docker run -d --name {{.CONTAINER_EN}} -p {{.PORT}}:8888 --gpus all -e TTS_LANGUAGES={{.LANG_EN}} {{.IMAGE}}
+      - cmd /c docker ps --filter "name={{.CONTAINER_EN}}"
+
+  imageweb:
+    desc: Open default browser to the local MeloTTS UI
+    cmds:
+      - cmd /c start "" "http://localhost:{{.PORT}}"
+
+  imagestop:
+    desc: Stop running MeloTTS test containers
+    cmds:
+      - cmd: cmd /c docker stop {{.CONTAINER_EN}} >nul 2>&1
+        ignore_error: true
+      - cmd: cmd /c docker stop {{.CONTAINER_FULL}} >nul 2>&1
+        ignore_error: true
+      - cmd: cmd /c docker stop {{.CONTAINER_LOCAL}} >nul 2>&1
+        ignore_error: true
+
+  imagerunfull:
+    desc: Run existing image with full language set
+    cmds:
+      - cmd /c docker rm -f {{.CONTAINER_EN}} >nul 2>&1
+      - cmd /c docker rm -f {{.CONTAINER_FULL}} >nul 2>&1
+      - cmd /c docker run -d --name {{.CONTAINER_FULL}} -p {{.PORT}}:8888 --gpus all -e TTS_LANGUAGES={{.LANG_FULL}} {{.IMAGE}}
+      - cmd /c docker ps --filter "name={{.CONTAINER_FULL}}"
+
+  localrun:
+    desc: Run image with local melo/app.py bind-mounted for quick app.py testing
+    cmds:
+      - cmd /c docker rm -f {{.CONTAINER_EN}} >nul 2>&1
+      - cmd /c docker rm -f {{.CONTAINER_FULL}} >nul 2>&1
+      - cmd /c docker rm -f {{.CONTAINER_LOCAL}} >nul 2>&1
+      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e TTS_LANGUAGES={{.LANG_EN}} -v "{{.TASKFILE_DIR}}\\melo\\app.py:/app/melo/app.py:ro" {{.IMAGE}}
+      - cmd /c docker ps --filter "name={{.CONTAINER_LOCAL}}"
+
+  imageapi:
+    desc: Call TTS API, play generated temp WAV, then remove it
+    cmds:
+      - 'cmd /c curl.exe -sS --retry 30 --retry-delay 2 --retry-connrefused http://localhost:{{.PORT}}/tts/ping >nul'
+      - 'cmd /c curl.exe -sS -X POST http://localhost:{{.PORT}}/tts/convert/tts -H "Content-Type: application/json" -d "{\"text\":\"Hello world. I wanted to test this and see if this works properly\",\"speed\":1.0,\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"sdp_ratio\":0.21,\"noise_scale\":0.61,\"noise_scale_w\":0.81}" --output {{.TEMP_WAV}}'
+      - 'cmd /c if not exist {{.TEMP_WAV}} exit /b 1'
+      - 'cmd /c python -c "import winsound; winsound.PlaySound(r''{{.TEMP_WAV}}'', winsound.SND_FILENAME)"'
+      - 'cmd /c del /f /q {{.TEMP_WAV}}'
+
+  nuke:
+    desc: Remove local MeloTTS containers and image
+    cmds:
+      - cmd /c docker rm -f {{.CONTAINER_EN}} >nul 2>&1
+      - cmd /c docker rm -f {{.CONTAINER_FULL}} >nul 2>&1
+      - cmd /c docker rmi -f {{.IMAGE}} >nul 2>&1
+
+
+
+

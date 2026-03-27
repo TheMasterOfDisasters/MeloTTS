@@ -11,8 +11,8 @@ from pydantic import BaseModel
 from melo.api import TTS
 
 # ─── Configuration & Version Info ─────────────────────────────────────────────
-VERSION = os.getenv("APP_VERSION", "v0.0.3")
-BUILD_ID = os.getenv("BUILD_ID", "13")
+VERSION = os.getenv("APP_VERSION", "v0.0.5")
+BUILD_ID = os.getenv("BUILD_ID", "17")
 
 # ─── Logging Setup ─────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -92,7 +92,23 @@ def load_speakers(language: str, text: str):
     return gr.update(choices=speakers, value=speakers[0]), defaults.get(language, text)
 
 # ─── Build Gradio Blocks ────────────────────────────────────────────────────────
-with gr.Blocks() as demo:
+with gr.Blocks(css="""
+#build-badge {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.45);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-family: Arial, sans-serif;
+    backdrop-filter: blur(2px);
+}
+""") as demo:
+    gr.HTML(f"<div id='build-badge'>Version: {VERSION} | Build: {BUILD_ID}</div>")
     gr.Markdown("## Multilingual TTS Playground")
     with gr.Row():
         language = gr.Dropdown(LANGUAGES, label="Language", value=LANGUAGES[0])
