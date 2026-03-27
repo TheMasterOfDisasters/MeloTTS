@@ -88,10 +88,6 @@ nltk==3.8.1
 num2words==0.5.12
 numba==0.59.0
 numpy==1.26.4
-nvidia-cublas-cu11==11.10.3.66
-nvidia-cuda-nvrtc-cu11==11.7.99
-nvidia-cuda-runtime-cu11==11.7.99
-nvidia-cudnn-cu11==8.9.4.25
 orjson==3.9.15
 packaging==24.0
 pandas==2.2.1
@@ -145,8 +141,8 @@ threadpoolctl==3.3.0
 tokenizers==0.13.3
 tomlkit==0.12.0
 toolz==0.12.1
-torch==2.5.0
-torchaudio==2.5.0
+torch==2.8.0
+torchaudio==2.8.0
 tqdm==4.66.2
 transformers==4.27.4
 txtsplit==1.0.0

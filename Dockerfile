@@ -17,6 +17,9 @@ COPY requirements.txt .
 # Install Python dependencies (PostInstall will auto-download unidic!)
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install -r requirements.txt
+ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cu128
+ARG TORCH_PACKAGES="torch==2.8.0+cu128 torchaudio==2.8.0+cu128"
+RUN pip install --index-url ${TORCH_INDEX_URL} ${TORCH_PACKAGES}
 RUN python -m unidic download
 
 # Now bring in the actual application code
@@ -25,11 +28,18 @@ COPY . .
 RUN pip install -e .
 
 # Download and remove unneeded model formats from Hugging Face cache
-RUN python melo/init_downloads.py && \
-    find /root/.cache/huggingface/hub/models--* \
+ARG INIT_DOWNLOADS_STRICT=0
+ARG INIT_DOWNLOADS_MAX_RETRIES=5
+ARG INIT_DOWNLOADS_RETRY_SLEEP=5
+RUN INIT_DOWNLOADS_STRICT=${INIT_DOWNLOADS_STRICT} \
+    INIT_DOWNLOADS_MAX_RETRIES=${INIT_DOWNLOADS_MAX_RETRIES} \
+    INIT_DOWNLOADS_RETRY_SLEEP=${INIT_DOWNLOADS_RETRY_SLEEP} \
+    python melo/init_downloads.py || \
+    if [ "${INIT_DOWNLOADS_STRICT}" = "1" ]; then exit 1; else echo "[WARN] init_downloads failed in non-strict mode; continuing build"; fi && \
+    find /root/.cache/huggingface/hub \
         -type f \
         \( -name "*.h5" -o -name "*.tflite" -o -name "tf_model*" -o -name "*.onnx" -o -name "rust_model*" -o -name "*.msgpack" \) \
-        -exec rm -f {} +
+        -exec rm -f {} + 2>/dev/null || true
 
 # ============================================================
 # Stage 2: Final runtime image
