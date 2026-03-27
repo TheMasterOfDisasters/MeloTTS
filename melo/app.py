@@ -1,8 +1,10 @@
 import io
 import os
 import logging
+import gc
 
 import gradio as gr
+import torch
 from fastapi import FastAPI, Body, Depends
 from pydantic import BaseModel
 
@@ -95,6 +97,37 @@ def load_speakers(language: str, text: str):
     logger.info(f"Updated speakers for language={language}: {speakers}")
     return gr.update(choices=speakers, value=speakers[0]), defaults.get(language, text)
 
+
+def release_unused_models(language: str):
+    """
+    Keep only the selected language model in memory and release the rest.
+    """
+    global models
+    keep_model = models.get(language)
+    if not keep_model:
+        logger.warning(f"Cannot release models; selected language not loaded: {language}")
+        gr.Warning("No changes: selected language is not currently loaded.")
+        return (
+            gr.update(choices=list(models.keys()), value=None),
+            gr.update(choices=[], value=None),
+        )
+
+    removed = [lang for lang in list(models.keys()) if lang != language]
+    models = {language: keep_model}
+
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+
+    speakers = list(keep_model.hps.data.spk2id.keys())
+    logger.info(f"Released models from memory: {removed}. Kept: {language}")
+    status = f"Released {len(removed)} model(s). Kept loaded: {language}."
+    gr.Info(status)
+    return (
+        gr.update(choices=list(models.keys()), value=language),
+        gr.update(choices=speakers, value=speakers[0] if speakers else None),
+    )
+
 # ─── Build Gradio Blocks ────────────────────────────────────────────────────────
 with gr.Blocks(css="""
 #build-badge {
@@ -118,6 +151,7 @@ with gr.Blocks(css="""
             gr.Markdown("## Multilingual TTS Playground")
             with gr.Row():
                 language = gr.Dropdown(LANGUAGES, label="Language", value=LANGUAGES[0])
+                purge_btn = gr.Button("Purge others", size="sm", variant="secondary", min_width=120)
                 speaker = gr.Dropdown([], label="Speaker")
             text = gr.Textbox(lines=3, label="Text")
             speed = gr.Slider(0.5, 2.0, value=1.0, label="Speed")
@@ -178,6 +212,12 @@ You can also open interactive OpenAPI docs at `/tts/docs`.
         fn=synthesize,
         inputs=[speaker, text, speed, language, sdp_ratio, noise_scale, noise_scale_w],
         outputs=[audio_out]
+    )
+    # Release all models except selected language
+    purge_btn.click(
+        fn=release_unused_models,
+        inputs=[language],
+        outputs=[language, speaker],
     )
     # Initialize speakers and default text on page load
     demo.load(load_speakers, inputs=[language, text], outputs=[speaker, text])

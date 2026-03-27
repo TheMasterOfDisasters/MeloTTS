@@ -56,6 +56,15 @@ tasks:
       - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e TTS_LANGUAGES={{.LANG_EN}} -v "{{.TASKFILE_DIR}}\\melo\\app.py:/app/melo/app.py:ro" {{.IMAGE}}
       - cmd /c docker ps --filter "name={{.CONTAINER_LOCAL}}"
 
+  localrunfull:
+    desc: Run image with local melo/app.py bind-mounted and full language set
+    cmds:
+      - cmd /c docker rm -f {{.CONTAINER_EN}} >nul 2>&1
+      - cmd /c docker rm -f {{.CONTAINER_FULL}} >nul 2>&1
+      - cmd /c docker rm -f {{.CONTAINER_LOCAL}} >nul 2>&1
+      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e TTS_LANGUAGES={{.LANG_FULL}} -v "{{.TASKFILE_DIR}}\\melo\\app.py:/app/melo/app.py:ro" {{.IMAGE}}
+      - cmd /c docker ps --filter "name={{.CONTAINER_LOCAL}}"
+
   imageapi:
     desc: Call TTS API, play generated temp WAV, then remove it
     cmds:
