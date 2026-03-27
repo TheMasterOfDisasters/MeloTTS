@@ -109,17 +109,63 @@ with gr.Blocks(css="""
 }
 """) as demo:
     gr.HTML(f"<div id='build-badge'>Version: {VERSION} | Build: {BUILD_ID}</div>")
-    gr.Markdown("## Multilingual TTS Playground")
-    with gr.Row():
-        language = gr.Dropdown(LANGUAGES, label="Language", value=LANGUAGES[0])
-        speaker = gr.Dropdown([], label="Speaker")
-    text = gr.Textbox(lines=3, label="Text")
-    speed = gr.Slider(0.5, 2.0, value=1.0, label="Speed")
-    sdp_ratio = gr.Slider(0.0, 1.0, value=0.2, label="SDP Ratio")
-    noise_scale = gr.Slider(0.0, 1.5, value=0.6, label="Noise Scale")
-    noise_scale_w = gr.Slider(0.0, 1.5, value=0.8, label="Noise Scale W")
-    btn = gr.Button("Synthesize")
-    audio_out = gr.Audio(label="Output Audio")
+    with gr.Tabs():
+        with gr.Tab("UI Playground"):
+            gr.Markdown("## Multilingual TTS Playground")
+            with gr.Row():
+                language = gr.Dropdown(LANGUAGES, label="Language", value=LANGUAGES[0])
+                speaker = gr.Dropdown([], label="Speaker")
+            text = gr.Textbox(lines=3, label="Text")
+            speed = gr.Slider(0.5, 2.0, value=1.0, label="Speed")
+            sdp_ratio = gr.Slider(0.0, 1.0, value=0.2, label="SDP Ratio")
+            noise_scale = gr.Slider(0.0, 1.5, value=0.6, label="Noise Scale")
+            noise_scale_w = gr.Slider(0.0, 1.5, value=0.8, label="Noise Scale W")
+            btn = gr.Button("Synthesize")
+            audio_out = gr.Audio(label="Output Audio")
+
+        with gr.Tab("API Docs"):
+            gr.Markdown(
+                """
+## API Docs
+
+Base path for custom endpoints: `/tts`
+
+### `GET /tts/ping`
+- Health/info endpoint
+- Response example:
+```json
+{
+  "msg": "pong",
+  "type": "MeloTTS",
+  "version": "v0.0.5",
+  "build_id": "17"
+}
+```
+
+### `POST /tts/convert/tts`
+- Convert text to WAV stream
+- JSON body:
+```json
+{
+  "text": "Hello world",
+  "speed": 1.0,
+  "language": "EN",
+  "speaker_id": "EN-BR",
+  "sdp_ratio": 0.2,
+  "noise_scale": 0.6,
+  "noise_scale_w": 0.8
+}
+```
+
+### `GET /tts/languages`
+- Returns currently loaded language codes
+
+### `GET /tts/speakers?language=EN`
+- Returns available speakers for a language
+
+You can also open interactive OpenAPI docs at `/tts/docs`.
+                """
+            )
 
     # Dynamic speaker loading
     language.change(load_speakers, inputs=[language, text], outputs=[speaker, text])
