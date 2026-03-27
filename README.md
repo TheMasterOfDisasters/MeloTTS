@@ -34,6 +34,12 @@ If you encounter bugs, have feature requests, or need help using MeloTTS:
 docker run -p 8888:8888 --gpus all sensejworld/melotts:latest
 ```
 
+Run on a specific GPU (example: GPU index `1`):
+
+```bash
+docker run -p 8888:8888 --gpus "device=1" sensejworld/melotts:latest
+```
+
 Then open: **[http://localhost:8888](http://localhost:8888)**
 
 ---
@@ -66,10 +72,15 @@ This is useful if you want to:
 
 ## 📜 Version History
 
-### v0.0.6 (Planned)
-- Added working `sm_120` (RTX 50-series) support in the Docker dependency setup.
-- Verified GPU targeting works, including deployment on RTX 5060 Ti.
-- Continue runtime hardening based on startup/runtime warnings.
+### v0.0.6 (27.03.2026)
+- Model loading is now much faster (from ~30 seconds down to only a few seconds in testing).
+- Added working RTX 50-series (`sm_120`) support in the Docker setup.
+- Added GPU selection support for Docker runs, so you can choose which GPU to use.
+- Improved build resilience for model preloading during Docker image creation.
+- Run with:
+  ```bash
+  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.6
+  ```
 
 ### v0.0.5 (27.03.2026)
 - Added more English model options (including V2 and V3 variants).
