@@ -69,7 +69,8 @@ View all available builds: [sensejworld/melotts — Tags](https://hub.docker.com
 ## 📜 Version History
 
 ### v0.0.6 (Planned)
-- Investigate and, if possible, add proper `sm_120` (RTX 50-series) support in Docker image dependencies.
+- Added working `sm_120` (RTX 50-series) support in the Docker dependency setup.
+- Verified GPU targeting works, including deployment on RTX 5060 Ti.
 - Continue runtime hardening based on startup/runtime warnings.
 
 ### v0.0.5 (27.03.2026)

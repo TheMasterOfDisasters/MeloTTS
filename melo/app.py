@@ -23,8 +23,27 @@ logging.basicConfig(
 logger = logging.getLogger("TTSApp")
 logger.info(f"Starting TTS UI+API App - Version: {VERSION}, Build: {BUILD_ID}")
 
+
+def get_runtime_label():
+    try:
+        if torch.cuda.is_available():
+            gpu_name = torch.cuda.get_device_name(0)
+            major, minor = torch.cuda.get_device_capability(0)
+            sm_code = major * 10 + minor
+            visible = os.getenv("CUDA_VISIBLE_DEVICES", "all")
+            return f"GPU: {gpu_name} (sm_{sm_code}, visible={visible})"
+        mps_backend = getattr(torch.backends, "mps", None)
+        if mps_backend is not None and getattr(mps_backend, "is_available", lambda: False)():
+            return "Device: Apple MPS"
+    except Exception as error:
+        logger.warning(f"Could not determine runtime device label: {error}")
+    return "Device: CPU"
+
 # ─── Load Your TTS Models ───────────────────────────────────────────────────────
-DEVICE = "auto"
+DEVICE = os.getenv("TTS_DEVICE", "auto")
+logger.info(f"Runtime device setting: {DEVICE}; CUDA_VISIBLE_DEVICES={os.getenv('CUDA_VISIBLE_DEVICES', 'not-set')}")
+RUNTIME_LABEL = get_runtime_label()
+logger.info(f"Runtime label: {RUNTIME_LABEL}")
 LANGUAGES = [
     lang.strip()
     for lang in os.getenv("TTS_LANGUAGES", "EN,EN_V2,EN_NEWEST,ES,FR,ZH,JP,KR").split(",")
@@ -145,7 +164,7 @@ with gr.Blocks(css="""
     backdrop-filter: blur(2px);
 }
 """) as demo:
-    gr.HTML(f"<div id='build-badge'>Version: {VERSION} | Build: {BUILD_ID}</div>")
+    gr.HTML(f"<div id='build-badge'>Version: {VERSION} | Build: {BUILD_ID}<br>{RUNTIME_LABEL}</div>")
     with gr.Tabs():
         with gr.Tab("UI Playground"):
             gr.Markdown("## Multilingual TTS Playground")

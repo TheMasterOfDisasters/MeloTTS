@@ -3,6 +3,7 @@ version: '3'
 vars:
   IMAGE: melotts:test
   PORT: '8888'
+  GPU_DEVICE: '0'
   CONTAINER_EN: melotts_en
   CONTAINER_FULL: melotts_full
   CONTAINER_LOCAL: melotts_local
@@ -11,17 +12,22 @@ vars:
   TEMP_WAV: '%TEMP%\\melotts_task.wav'
 
 tasks:
+  gpuinfo:
+    desc: Show host GPU indexes (use with GPU_DEVICE variable)
+    cmds:
+      - cmd /c nvidia-smi --query-gpu=index,name --format=csv,noheader
+
   image:
     desc: Build local MeloTTS Docker image
     cmds:
       - cmd /c docker build -t {{.IMAGE}} .
 
   imagerun:
-    desc: Run existing image with English only
+    desc: Run existing image with English only (default GPU_DEVICE=0)
     cmds:
       - cmd /c docker rm -f {{.CONTAINER_FULL}} >nul 2>&1
       - cmd /c docker rm -f {{.CONTAINER_EN}} >nul 2>&1
-      - cmd /c docker run -d --name {{.CONTAINER_EN}} -p {{.PORT}}:8888 --gpus all -e TTS_LANGUAGES={{.LANG_EN}} {{.IMAGE}}
+      - cmd /c docker run -d --name {{.CONTAINER_EN}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_EN}} {{.IMAGE}}
       - cmd /c docker ps --filter "name={{.CONTAINER_EN}}"
 
   imageweb:
@@ -40,29 +46,29 @@ tasks:
         ignore_error: true
 
   imagerunfull:
-    desc: Run existing image with full language set
+    desc: Run existing image with full language set (default GPU_DEVICE=0)
     cmds:
       - cmd /c docker rm -f {{.CONTAINER_EN}} >nul 2>&1
       - cmd /c docker rm -f {{.CONTAINER_FULL}} >nul 2>&1
-      - cmd /c docker run -d --name {{.CONTAINER_FULL}} -p {{.PORT}}:8888 --gpus all -e TTS_LANGUAGES={{.LANG_FULL}} {{.IMAGE}}
+      - cmd /c docker run -d --name {{.CONTAINER_FULL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_FULL}} {{.IMAGE}}
       - cmd /c docker ps --filter "name={{.CONTAINER_FULL}}"
 
   localrun:
-    desc: Run image with local melo/app.py bind-mounted for quick app.py testing
+    desc: Run image with local melo/app.py bind-mounted for quick app.py testing (default GPU_DEVICE=0)
     cmds:
       - cmd /c docker rm -f {{.CONTAINER_EN}} >nul 2>&1
       - cmd /c docker rm -f {{.CONTAINER_FULL}} >nul 2>&1
       - cmd /c docker rm -f {{.CONTAINER_LOCAL}} >nul 2>&1
-      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e TTS_LANGUAGES={{.LANG_EN}} -v "{{.TASKFILE_DIR}}\\melo\\app.py:/app/melo/app.py:ro" {{.IMAGE}}
+      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_EN}} -v "{{.TASKFILE_DIR}}\melo\app.py:/app/melo/app.py:ro" {{.IMAGE}}
       - cmd /c docker ps --filter "name={{.CONTAINER_LOCAL}}"
 
   localrunfull:
-    desc: Run image with local melo/app.py bind-mounted and full language set
+    desc: Run image with local melo/app.py bind-mounted and full language set (default GPU_DEVICE=0)
     cmds:
       - cmd /c docker rm -f {{.CONTAINER_EN}} >nul 2>&1
       - cmd /c docker rm -f {{.CONTAINER_FULL}} >nul 2>&1
       - cmd /c docker rm -f {{.CONTAINER_LOCAL}} >nul 2>&1
-      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e TTS_LANGUAGES={{.LANG_FULL}} -v "{{.TASKFILE_DIR}}\\melo\\app.py:/app/melo/app.py:ro" {{.IMAGE}}
+      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_FULL}} -v "{{.TASKFILE_DIR}}\melo\app.py:/app/melo/app.py:ro" {{.IMAGE}}
       - cmd /c docker ps --filter "name={{.CONTAINER_LOCAL}}"
 
   imageapi:
