@@ -66,10 +66,21 @@ This is useful if you want to:
 
 ## 📜 Version History
 
-### v0.0.5 (Planned)
-- Add V2 models
-- Add V3 models
-- Create new repo (Melotts-base) with image containing models so build have more space in the future
+### v0.0.6 (Planned)
+- Investigate and, if possible, add proper `sm_120` (RTX 50-series) support in Docker image dependencies.
+- Continue runtime hardening based on startup/runtime warnings.
+
+### v0.0.5 (27.03.2026)
+- Added more English model options (including V2 and V3 variants).
+- Added UI tabs for `UI Playground` and `API Docs`.
+- Added build/version badge in UI (top-right) via `APP_VERSION` and `BUILD_ID`.
+- Added memory management in UI (`Purge others`) to release non-selected language models.
+- Improved API documentation visibility directly inside the app (`/` -> API Docs tab + `/tts/docs`).
+- Updated release planning: V2/V3 scope completed; deferred separate base-repo split plan.
+- Run with:
+  ```bash
+  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.5
+  ```
 
 ### v0.0.4 (09.08.2025)
 - **Dependency updates** for improved performance and stability.
