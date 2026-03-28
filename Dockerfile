@@ -31,9 +31,11 @@ RUN pip install -e .
 ARG INIT_DOWNLOADS_STRICT=0
 ARG INIT_DOWNLOADS_MAX_RETRIES=5
 ARG INIT_DOWNLOADS_RETRY_SLEEP=5
+ARG INIT_DOWNLOADS_PROFILE=FULL
 RUN INIT_DOWNLOADS_STRICT=${INIT_DOWNLOADS_STRICT} \
     INIT_DOWNLOADS_MAX_RETRIES=${INIT_DOWNLOADS_MAX_RETRIES} \
     INIT_DOWNLOADS_RETRY_SLEEP=${INIT_DOWNLOADS_RETRY_SLEEP} \
+    INIT_DOWNLOADS_PROFILE=${INIT_DOWNLOADS_PROFILE} \
     python melo/init_downloads.py || \
     if [ "${INIT_DOWNLOADS_STRICT}" = "1" ]; then exit 1; else echo "[WARN] init_downloads failed in non-strict mode; continuing build"; fi && \
     find /root/.cache/huggingface/hub \

@@ -18,7 +18,12 @@ docker run -p 8888:8888 sensejworld/melotts
 
 **NVIDIA GPU:**
 ```bash
-docker run -p 8888:8888 --gpus all sensejworld/melotts
+docker run -p 8888:8888 --gpus all sensejworld/melotts:latest_full
+```
+
+**EN-focused image (smaller target image):**
+```bash
+docker run -p 8888:8888 --gpus all sensejworld/melotts:latest_en
 ```
 
 **Specific GPU (example: GPU index `1`):**
@@ -68,10 +73,30 @@ I respond fastest on GitHub — Docker Hub comments aren’t monitored regularly
 ## 📦 Docker Hub Tags
 View all available builds: [sensejworld/melotts — Tags](https://hub.docker.com/r/sensejworld/melotts/tags)
 
+Main tag strategy:
+- EN-focused image: `latest_en`, `<version>_en`
+- Full multilingual image: `latest_full`, `<version>_full`
+
 
 ---
 
 ## 📜 Version History
+
+### v0.0.7 (planned)
+- Focus on reducing Docker image size and cleaning up what gets baked into releases.
+- Introduce split release strategy:
+  - EN-focused image (`<version>_en`) for lighter pulls and simpler English deployments.
+  - Full multilingual image (`<version>_full`) for all supported languages.
+- Add dedicated CI workflows for EN and FULL builds.
+- Runtime dependencies cleanup: avoid installing build tools (for example `build-essential`) in the final Docker stage; keep runtime libraries only.
+- Reduce Python payload by trimming runtime-unneeded packages from `requirements.txt` where safe (especially training/dev-oriented dependencies).
+- Add `.dockerignore` (`.git`, `.github`, `docs`, `test`, `todo`, `__pycache__`, `.idea`, notebooks, outputs) to speed up builds and keep build context clean.
+- Planned run examples:
+  ```bash
+  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.7_en
+  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.7_full
+  docker run -p 8888:8888 --gpus "device=1" sensejworld/melotts:v0.0.7_en
+  ```
 
 ### v0.0.6 (27.03.2026)
 - Model loading is now much faster (from ~30 seconds down to only a few seconds in testing).

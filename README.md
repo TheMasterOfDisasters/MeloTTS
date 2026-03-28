@@ -31,7 +31,13 @@ If you encounter bugs, have feature requests, or need help using MeloTTS:
 ## 🚀 Quick Start
 
 ```bash
-docker run -p 8888:8888 --gpus all sensejworld/melotts:latest
+docker run -p 8888:8888 --gpus all sensejworld/melotts:latest_full
+```
+
+EN-focused build (smaller target image):
+
+```bash
+docker run -p 8888:8888 --gpus all sensejworld/melotts:latest_en
 ```
 
 Run on a specific GPU (example: GPU index `1`):
@@ -57,6 +63,7 @@ curl -X POST "http://localhost:8888/api/tts"   -F "text=Hello world!"   -F "lang
 - Preloaded models for instant offline use (optional)
 - GPU acceleration when available
 - HTTP API + web UI in one container
+- Split image strategy in progress: `*_en` and `*_full` tags
 
 ---
 
@@ -68,9 +75,29 @@ This is useful if you want to:
 - Check the latest available builds before pulling
 - Verify image tags for deployment
 
+Current tag pattern:
+- EN-focused image: `latest_en`, `<version>_en`
+- Full multilingual image: `latest_full`, `<version>_full`
+
 ---
 
 ## 📜 Version History
+
+### v0.0.7 (planned)
+- Focus on Docker image size reduction and cleaner build footprint.
+- Split release strategy into two Docker images:
+  - EN-focused: `<version>_en` (English variants only)
+  - Multilingual: `<version>_full` (all supported languages)
+- Add dedicated GitHub workflows for EN and FULL builds to keep releases manageable.
+- Runtime dependencies cleanup: avoid installing build tools (for example `build-essential`) in the final Docker stage; keep runtime libraries only.
+- Reduce Python payload by trimming runtime-unneeded packages from `requirements.txt` where safe (especially training/dev-oriented dependencies).
+- Add `.dockerignore` (`.git`, `.github`, `docs`, `test`, `todo`, `__pycache__`, `.idea`, notebooks, outputs) to speed up builds and keep build context clean.
+- Planned run examples:
+  ```bash
+  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.7_en
+  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.7_full
+  docker run -p 8888:8888 --gpus "device=1" sensejworld/melotts:v0.0.7_en
+  ```
 
 ### v0.0.6 (27.03.2026)
 - Model loading is now much faster (from ~30 seconds down to only a few seconds in testing).
