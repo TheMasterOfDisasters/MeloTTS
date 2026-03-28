@@ -18,7 +18,7 @@ docker run -p 8888:8888 sensejworld/melotts
 
 **NVIDIA GPU:**
 ```bash
-docker run -p 8888:8888 --gpus all sensejworld/melotts:latest_full
+docker run -p 8888:8888 --gpus all sensejworld/melotts:latest
 ```
 
 **EN-focused image (smaller target image):**
@@ -75,7 +75,7 @@ View all available builds: [sensejworld/melotts — Tags](https://hub.docker.com
 
 Main tag strategy:
 - EN-focused image: `latest_en`, `<version>_en`
-- Full multilingual image: `latest_full`, `<version>_full`
+- Full multilingual image: `latest`, `<version>_full`
 
 
 ---

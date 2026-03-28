@@ -31,7 +31,7 @@ If you encounter bugs, have feature requests, or need help using MeloTTS:
 ## 🚀 Quick Start
 
 ```bash
-docker run -p 8888:8888 --gpus all sensejworld/melotts:latest_full
+docker run -p 8888:8888 --gpus all sensejworld/melotts:latest
 ```
 
 EN-focused build (smaller target image):
@@ -77,7 +77,7 @@ This is useful if you want to:
 
 Current tag pattern:
 - EN-focused image: `latest_en`, `<version>_en`
-- Full multilingual image: `latest_full`, `<version>_full`
+- Full multilingual image: `latest`, `<version>_full`
 
 ---
 
