@@ -7,6 +7,7 @@ from pathlib import Path
 
 import gradio as gr
 import torch
+import soundfile as sf
 from fastapi import FastAPI, Body, Depends
 from pydantic import BaseModel
 
@@ -38,10 +39,26 @@ def _load_build_metadata():
     return {}
 
 
+def _load_version_from_file():
+    version_file_path = _read_non_empty_env("VERSION_FILE_PATH") or str(
+        (Path(__file__).resolve().parent.parent / "VERSION")
+    )
+    try:
+        with open(version_file_path, "r", encoding="utf-8") as version_file:
+            version = version_file.read().strip()
+            return version or None
+    except FileNotFoundError:
+        pass
+    except Exception as error:
+        logger = logging.getLogger("TTSApp")
+        logger.warning(f"Unable to read version file at {version_file_path}: {error}")
+    return None
+
+
 def _resolve_runtime_version_and_build():
     metadata = _load_build_metadata()
-    version = _read_non_empty_env("APP_VERSION") or metadata.get("app_version") or "v0.0.7-SNAPSHOT"
-    build_id = _read_non_empty_env("BUILD_ID") or metadata.get("build_id") or "local-dev"
+    version = _load_version_from_file() or metadata.get("app_version") or "0.0.0-SNAPSHOT"
+    build_id = metadata.get("build_id") or _read_non_empty_env("BUILD_ID") or "local-dev"
     return version, build_id
 
 
@@ -92,7 +109,7 @@ for lang in LANGUAGES:
         logger.error(f"Failed to load model for {lang}: {e}")
 
 # ─── Gradio UI Callbacks ────────────────────────────────────────────────────────
-def synthesize(speaker: str, text: str, speed: float, language: str,  sdp_ratio: float = 0.2, noise_scale: float = 0.6, noise_scale_w: float = 0.8, progress=gr.Progress()):
+def synthesize(speaker: str, text: str, speed: float, language: str,  sdp_ratio: float = 0.2, noise_scale: float = 0.6, noise_scale_w: float = 0.8):
     """
     Perform TTS synthesis, return WAV bytes.
     """
@@ -116,11 +133,14 @@ def synthesize(speaker: str, text: str, speed: float, language: str,  sdp_ratio:
             sdp_ratio=sdp_ratio,
             noise_scale=noise_scale,
             noise_scale_w=noise_scale_w,
-            pbar=progress.tqdm,
+            pbar=None,
             format="wav"
         )
+        bio.seek(0)
+        # Gradio 4.x Audio(type="numpy") expects (sample_rate, waveform) output.
+        wav_data, sample_rate = sf.read(bio, dtype="float32")
         logger.info(f"Synthesized audio for language={language}, speaker={speaker}")
-        return bio.getvalue()
+        return sample_rate, wav_data
     except Exception as e:
         logger.exception(f"Error in synthesize callback: {e}")
         return None
@@ -258,21 +278,33 @@ You can also open interactive OpenAPI docs at `/tts/docs`.
             )
 
     # Dynamic speaker loading
-    language.change(load_speakers, inputs=[language, text], outputs=[speaker, text])
+    language.change(
+        load_speakers,
+        inputs=[language, text],
+        outputs=[speaker, text],
+        queue=False,
+    )
     # Synthesis button
     btn.click(
         fn=synthesize,
         inputs=[speaker, text, speed, language, sdp_ratio, noise_scale, noise_scale_w],
-        outputs=[audio_out]
+        outputs=[audio_out],
+        queue=False,
     )
     # Release all models except selected language
     purge_btn.click(
         fn=release_unused_models,
         inputs=[language],
         outputs=[language, speaker],
+        queue=False,
     )
     # Initialize speakers and default text on page load
-    demo.load(load_speakers, inputs=[language, text], outputs=[speaker, text])
+    demo.load(
+        load_speakers,
+        inputs=[language, text],
+        outputs=[speaker, text],
+        queue=False,
+    )
 
 # ─── Enable Gradio Queue ───────────────────────────────────────────────────────
 logger.info("Enabling Gradio queue: default_concurrency_limit=4, api_open=False")

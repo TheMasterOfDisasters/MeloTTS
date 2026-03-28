@@ -5,6 +5,10 @@ from setuptools.command.install import install
 
 
 cwd = os.path.dirname(os.path.abspath(__file__))
+version_file = os.path.join(cwd, 'VERSION')
+
+with open(version_file, encoding='utf-8') as f:
+    package_version = f.read().strip()
 
 with open('requirements.txt') as f:
     reqs = f.read().splitlines()
@@ -23,7 +27,7 @@ class PostDevelopCommand(develop):
 
 setup(
     name='melotts',
-    version='0.1.2',
+    version=package_version,
     python_requires='>=3.10',
     packages=find_packages(),
     include_package_data=True,

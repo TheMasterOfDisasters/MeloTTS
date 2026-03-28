@@ -3,7 +3,6 @@ version: '3'
 vars:
   IMAGE: melotts:test
   PORT: '8888'
-  APP_VERSION: v0.0.7-SNAPSHOT
   BUILD_ID: ''
   GPU_DEVICE: '0'
   CONTAINER_EN: melotts_en
@@ -22,12 +21,12 @@ tasks:
   image:
     desc: Build local MeloTTS Docker image (FULL profile)
     cmds:
-      - cmd /c docker build --build-arg APP_VERSION={{.APP_VERSION}} --build-arg BUILD_ID={{.BUILD_ID}} --build-arg INIT_DOWNLOADS_PROFILE=FULL -t {{.IMAGE}} .
+      - cmd /c docker build --build-arg BUILD_ID={{.BUILD_ID}} --build-arg INIT_DOWNLOADS_PROFILE=FULL -t {{.IMAGE}} .
 
   imagesmall:
     desc: Build local MeloTTS Docker image with EN-only preload profile
     cmds:
-      - cmd /c docker build --build-arg APP_VERSION={{.APP_VERSION}} --build-arg BUILD_ID={{.BUILD_ID}} --build-arg INIT_DOWNLOADS_PROFILE=EN_ONLY -t {{.IMAGE}} .
+      - cmd /c docker build --build-arg BUILD_ID={{.BUILD_ID}} --build-arg INIT_DOWNLOADS_PROFILE=EN_ONLY -t {{.IMAGE}} .
 
   imagerun:
     desc: Run existing image with full language set (default GPU_DEVICE=0)

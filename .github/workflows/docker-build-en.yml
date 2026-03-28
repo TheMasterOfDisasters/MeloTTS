@@ -57,6 +57,13 @@ jobs:
             echo "EOF"
           } >> "$GITHUB_OUTPUT"
 
+      - name: Prepare build metadata args
+        id: build_meta
+        shell: bash
+        run: |
+          BUILD_ID="${GITHUB_RUN_NUMBER}.${GITHUB_SHA::7}"
+          echo "build_id=${BUILD_ID}" >> "$GITHUB_OUTPUT"
+
       - name: Build and push EN image
         uses: docker/build-push-action@v6
         with:
@@ -65,6 +72,7 @@ jobs:
           push: true
           tags: ${{ steps.tags.outputs.tags }}
           build-args: |
+            BUILD_ID=${{ steps.build_meta.outputs.build_id }}
             INIT_DOWNLOADS_PROFILE=EN_ONLY
 
       - name: Check remaining disk space

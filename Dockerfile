@@ -3,7 +3,6 @@
 # ============================================================
 FROM python:3.10-slim AS builder
 
-ARG APP_VERSION=""
 ARG BUILD_ID=""
 
 WORKDIR /app
@@ -29,7 +28,7 @@ RUN python -m unidic download
 COPY . .
 
 # Persist build metadata so runtime can display non-hardcoded version/build info.
-RUN APP_VERSION=${APP_VERSION} BUILD_ID=${BUILD_ID} python -c "import datetime, json, os; app_version=(os.getenv('APP_VERSION') or '').strip() or 'v0.0.7-SNAPSHOT'; build_id=(os.getenv('BUILD_ID') or '').strip() or datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S'); json.dump({'app_version': app_version, 'build_id': build_id, 'built_at_utc': datetime.datetime.utcnow().replace(microsecond=0).isoformat() + 'Z'}, open('/app/.build_meta.json', 'w', encoding='utf-8'))"
+RUN BUILD_ID=${BUILD_ID} python -c "import datetime, json, os, pathlib; version_path=pathlib.Path('/app/VERSION'); app_version=(version_path.read_text(encoding='utf-8').strip() if version_path.exists() else '') or '0.0.0-SNAPSHOT'; build_id=(os.getenv('BUILD_ID') or '').strip() or datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S'); json.dump({'app_version': app_version, 'build_id': build_id, 'built_at_utc': datetime.datetime.utcnow().replace(microsecond=0).isoformat() + 'Z'}, open('/app/.build_meta.json', 'w', encoding='utf-8'))"
 
 RUN pip install -e .
 
@@ -54,9 +53,7 @@ RUN INIT_DOWNLOADS_STRICT=${INIT_DOWNLOADS_STRICT} \
 # ============================================================
 FROM python:3.10-slim
 
-ARG APP_VERSION=""
 ARG BUILD_ID=""
-ENV APP_VERSION=${APP_VERSION}
 ENV BUILD_ID=${BUILD_ID}
 
 WORKDIR /app
