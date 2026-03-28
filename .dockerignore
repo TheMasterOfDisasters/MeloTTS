@@ -1,0 +1,32 @@
+# VCS and CI metadata
+.git
+.github
+
+# Local IDE/editor files
+.idea
+.vscode
+
+# Documentation and tests are not needed in runtime image
+/docs
+/test
+/todo
+
+# Python caches and notebook artifacts
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.ipynb_checkpoints
+**/*.ipynb
+
+# Local outputs/artifacts (from .gitignore)
+/basetts_outputs_use_bert
+/basetts_outputs
+/basetts_outputs_package
+/multilingual_ckpts
+*.wav
+*.zip
+
+# Misc local files
+.DS_Store
+Thumbs.db
+

@@ -50,8 +50,8 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \
-    build-essential libsndfile1 curl \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libsndfile1 curl \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /usr/local /usr/local
