@@ -20,6 +20,12 @@ FULL_BERT_MODELS = [
 ]
 EN_ONLY_BERT_MODELS = ["bert-base-uncased"]
 
+NLTK_RESOURCES = [
+    ("taggers/averaged_perceptron_tagger_eng", "averaged_perceptron_tagger_eng"),
+    ("taggers/averaged_perceptron_tagger", "averaged_perceptron_tagger"),
+    ("corpora/cmudict", "cmudict"),
+]
+
 
 def parse_csv_env(var_name):
     raw = os.getenv(var_name, "").strip()
@@ -84,6 +90,27 @@ def preload_bert_model(model_id):
     return run_with_retries(f"BERT model {model_id}", _load)
 
 
+def preload_nltk_resource(resource_path, download_name):
+    def _load():
+        import nltk
+
+        data_dir = os.getenv("NLTK_DATA_DIR", "/root/nltk_data")
+        os.makedirs(data_dir, exist_ok=True)
+        if data_dir not in nltk.data.path:
+            nltk.data.path.append(data_dir)
+
+        try:
+            nltk.data.find(resource_path)
+            return
+        except LookupError:
+            pass
+
+        nltk.download(download_name, download_dir=data_dir, quiet=True, raise_on_error=True)
+        nltk.data.find(resource_path)
+
+    return run_with_retries(f"NLTK resource {download_name}", _load)
+
+
 if __name__ == '__main__':
     device = 'auto'
     languages, bert_models = resolve_preload_targets()
@@ -91,6 +118,7 @@ if __name__ == '__main__':
     print(f"[INFO] INIT_DOWNLOADS_PROFILE={DOWNLOAD_PROFILE}")
     print(f"[INFO] Preloading TTS languages: {languages}")
     print(f"[INFO] Preloading BERT models: {bert_models}")
+    print(f"[INFO] Preloading NLTK resources: {[name for _, name in NLTK_RESOURCES]}")
 
     # Step 1: Preload selected TTS voice models
     failed_items = []
@@ -102,6 +130,11 @@ if __name__ == '__main__':
     for model_id in bert_models:
         if not preload_bert_model(model_id):
             failed_items.append(f"BERT:{model_id}")
+
+    # Step 3: Preload NLTK resources required by EN text processing (g2p_en).
+    for resource_path, download_name in NLTK_RESOURCES:
+        if not preload_nltk_resource(resource_path, download_name):
+            failed_items.append(f"NLTK:{download_name}")
 
     if failed_items:
         print(f"[WARN] Preload finished with failures: {failed_items}")

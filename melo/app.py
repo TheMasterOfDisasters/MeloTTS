@@ -74,6 +74,35 @@ logger = logging.getLogger("TTSApp")
 logger.info(f"Starting TTS UI+API App - Version: {VERSION}, Build: {BUILD_ID}")
 
 
+def validate_nltk_resources(required_languages):
+    if not any(lang.startswith("EN") for lang in required_languages):
+        return
+
+    try:
+        import nltk
+    except Exception as error:
+        raise RuntimeError(f"Failed to import nltk for EN startup validation: {error}") from error
+
+    required = [
+        ("taggers/averaged_perceptron_tagger_eng", "averaged_perceptron_tagger_eng"),
+        ("corpora/cmudict", "cmudict"),
+    ]
+    missing = []
+    for resource_path, resource_name in required:
+        try:
+            nltk.data.find(resource_path)
+        except LookupError:
+            missing.append(resource_name)
+
+    if missing:
+        raise RuntimeError(
+            "Missing required NLTK data for EN synthesis: "
+            + ", ".join(missing)
+            + ". Run `python melo/init_downloads.py` or `python -m nltk.downloader "
+            + "averaged_perceptron_tagger_eng cmudict` in the runtime image."
+        )
+
+
 def get_runtime_label():
     try:
         if torch.cuda.is_available():
@@ -99,6 +128,7 @@ LANGUAGES = [
     for lang in os.getenv("TTS_LANGUAGES", "EN,EN_V2,EN_NEWEST,ES,FR,ZH,JP,KR").split(",")
     if lang.strip()
 ]
+validate_nltk_resources(LANGUAGES)
 logger.info(f"Loading models for languages: {LANGUAGES}")
 models = {}
 for lang in LANGUAGES:
