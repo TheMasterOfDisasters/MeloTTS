@@ -101,10 +101,10 @@ protobuf==4.25.3
 pyasn1==0.5.1
 pyasn1-modules==0.3.0
 pycparser==2.21
-pydantic==2.6.4
-pydantic-core==2.16.3
+pydantic==2.10.6
+pydantic-core==2.27.2
 pydantic-extra-types==2.6.0
-pydantic-settings==2.2.1
+pydantic-settings==2.7.1
 pydub==0.25.1
 pygments==2.17.2
 pykakasi==2.2.1
@@ -113,7 +113,7 @@ pypinyin==0.50.0
 python-crfsuite==0.9.10
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.1
-python-multipart==0.0.9
+python-multipart==0.0.20
 pytz==2024.1
 pyyaml==6.0.1
 referencing==0.34.0
