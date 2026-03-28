@@ -1,7 +1,10 @@
 # ============================================================
 # Stage 1: Build environment with dependencies and models
 # ============================================================
-FROM python:3.9-slim AS builder
+FROM python:3.10-slim AS builder
+
+ARG APP_VERSION=""
+ARG BUILD_ID=""
 
 WORKDIR /app
 
@@ -25,6 +28,9 @@ RUN python -m unidic download
 # Now bring in the actual application code
 COPY . .
 
+# Persist build metadata so runtime can display non-hardcoded version/build info.
+RUN APP_VERSION=${APP_VERSION} BUILD_ID=${BUILD_ID} python -c "import datetime, json, os; app_version=(os.getenv('APP_VERSION') or '').strip() or 'v0.0.7-SNAPSHOT'; build_id=(os.getenv('BUILD_ID') or '').strip() or datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S'); json.dump({'app_version': app_version, 'build_id': build_id, 'built_at_utc': datetime.datetime.utcnow().replace(microsecond=0).isoformat() + 'Z'}, open('/app/.build_meta.json', 'w', encoding='utf-8'))"
+
 RUN pip install -e .
 
 # Download and remove unneeded model formats from Hugging Face cache
@@ -46,7 +52,12 @@ RUN INIT_DOWNLOADS_STRICT=${INIT_DOWNLOADS_STRICT} \
 # ============================================================
 # Stage 2: Final runtime image
 # ============================================================
-FROM python:3.9-slim
+FROM python:3.10-slim
+
+ARG APP_VERSION=""
+ARG BUILD_ID=""
+ENV APP_VERSION=${APP_VERSION}
+ENV BUILD_ID=${BUILD_ID}
 
 WORKDIR /app
 

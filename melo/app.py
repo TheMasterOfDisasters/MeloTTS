@@ -1,7 +1,9 @@
 import io
 import os
+import json
 import logging
 import gc
+from pathlib import Path
 
 import gradio as gr
 import torch
@@ -11,8 +13,39 @@ from pydantic import BaseModel
 from melo.api import TTS
 
 # ─── Configuration & Version Info ─────────────────────────────────────────────
-VERSION = os.getenv("APP_VERSION", "v0.0.7-SNAPSHOT")
-BUILD_ID = os.getenv("BUILD_ID", "35")
+def _read_non_empty_env(name: str):
+    value = os.getenv(name)
+    if value is None:
+        return None
+    value = value.strip()
+    return value or None
+
+
+def _load_build_metadata():
+    metadata_path = _read_non_empty_env("BUILD_METADATA_PATH") or str(
+        (Path(__file__).resolve().parent.parent / ".build_meta.json")
+    )
+    try:
+        with open(metadata_path, "r", encoding="utf-8") as metadata_file:
+            data = json.load(metadata_file)
+            if isinstance(data, dict):
+                return data
+    except FileNotFoundError:
+        pass
+    except Exception as error:
+        logger = logging.getLogger("TTSApp")
+        logger.warning(f"Unable to read build metadata from {metadata_path}: {error}")
+    return {}
+
+
+def _resolve_runtime_version_and_build():
+    metadata = _load_build_metadata()
+    version = _read_non_empty_env("APP_VERSION") or metadata.get("app_version") or "v0.0.7-SNAPSHOT"
+    build_id = _read_non_empty_env("BUILD_ID") or metadata.get("build_id") or "local-dev"
+    return version, build_id
+
+
+VERSION, BUILD_ID = _resolve_runtime_version_and_build()
 
 # ─── Logging Setup ─────────────────────────────────────────────────────────────
 logging.basicConfig(
