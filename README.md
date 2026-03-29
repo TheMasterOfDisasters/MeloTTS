@@ -83,16 +83,22 @@ Current tag pattern:
 
 ## 📜 Version History
 
-### v0.0.7 (planned)
-- Focus on Docker image size reduction and cleaner build footprint.
-- Split release strategy into two Docker images:
-  - EN-focused: `<version>_en` (English variants only)
-  - Multilingual: `<version>_full` (all supported languages)
-- Add dedicated GitHub workflows for EN and FULL builds to keep releases manageable.
-- Runtime dependencies cleanup: avoid installing build tools (for example `build-essential`) in the final Docker stage; keep runtime libraries only.
-- Reduce Python payload by trimming runtime-unneeded packages from `requirements.txt` where safe (especially training/dev-oriented dependencies).
-- Add `.dockerignore` (`.git`, `.github`, `docs`, `test`, `todo`, `__pycache__`, `.idea`, notebooks, outputs) to speed up builds and keep build context clean.
-- Planned run examples:
+### v0.0.7 (29.03.2026)
+- Upgraded Docker runtime/build baseline to Python 3.10 (`python:3.10-slim`) and aligned packaging with `python_requires>=3.10`.
+- Reworked app versioning/build metadata:
+  - Root `VERSION` file is now the single version source of truth.
+  - Build metadata is generated at image build time (no hardcoded `BUILD_ID`) and exposed in UI/API.
+- Upgraded web stack to newer compatible releases: `gradio==4.44.1`, `gradio-client==1.3.0`, `fastapi==0.115.12`, `starlette==0.46.2`, `typer==0.12.5`.
+- Applied large dependency/security refresh with pinned versions for reproducible builds, including network/security-sensitive packages such as `requests==2.32.4`, `urllib3==2.3.0`, `certifi==2025.6.15`, plus broad runtime library updates.
+- Added/kept compatibility guardrails for stability:
+  - `markupsafe` remains on 2.x for Gradio compatibility.
+  - `huggingface-hub==0.21.4` and `filelock==3.13.1` remain constrained by `cached-path==1.6.2`.
+- Improved offline reliability and startup resilience:
+  - Build-time preload profiles (`EN_ONLY` / `FULL`) with retry + strict/non-strict controls.
+  - NLTK resources required for EN synthesis (including `averaged_perceptron_tagger_eng` and `cmudict`) are preloaded during image build for offline-ready runs.
+- Fixed Gradio 4.x UI regressions after upgrades (language/speaker loading + synth output compatibility) while keeping API behavior stable.
+- Split Docker release flow into EN and FULL image tracks/workflows (`<version>_en`, `<version>_full`) to improve build/release flexibility.
+- Run with:
   ```bash
   docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.7_en
   docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.7_full
