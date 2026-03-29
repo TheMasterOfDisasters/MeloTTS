@@ -83,6 +83,12 @@ Current tag pattern:
 
 ## 📜 Version History
 
+### v0.0.8 (planned)
+- Platform: ongoing runtime and stack alignment.
+- Dependencies: another grouped refresh of core libraries.
+- Reliability: further hardening for offline and startup behavior.
+- Release process: keep branch-first validation before tagging.
+
 ### v0.0.7 (29.03.2026)
 - Upgraded Docker runtime/build baseline to Python 3.10 (`python:3.10-slim`) and aligned packaging with `python_requires>=3.10`.
 - Reworked app versioning/build metadata:
