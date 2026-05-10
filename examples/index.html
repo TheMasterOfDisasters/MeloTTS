@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>MeloTTS Voice Examples</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        --bg: #0f172a;
+        --panel: #111827;
+        --text: #f8fafc;
+        --muted: #cbd5e1;
+        --line: #334155;
+        --accent: #38bdf8;
+      }
+
+      body {
+        margin: 0;
+        font-family:
+          ui-sans-serif,
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      main {
+        width: min(940px, calc(100% - 32px));
+        margin: 0 auto;
+        padding: 40px 0 56px;
+      }
+
+      header {
+        margin-bottom: 28px;
+      }
+
+      h1 {
+        margin: 0 0 10px;
+        font-size: clamp(2rem, 5vw, 3.5rem);
+        line-height: 1;
+      }
+
+      p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 1rem;
+        line-height: 1.6;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 14px;
+      }
+
+      .sample {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: var(--panel);
+        padding: 16px;
+      }
+
+      .sample h2 {
+        margin: 0 0 12px;
+        font-size: 1.05rem;
+      }
+
+      audio {
+        width: 100%;
+        display: block;
+      }
+
+      .links {
+        margin-top: 28px;
+        display: flex;
+        gap: 14px;
+        flex-wrap: wrap;
+      }
+
+      a {
+        color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>MeloTTS Voice Examples</h1>
+        <p>
+          Multilingual MP3 samples generated with the MeloTTS Docker image.
+          The image includes a browser UI and HTTP API, so you can try it
+          manually or connect it to your own application.
+        </p>
+      </header>
+
+      <section class="grid" aria-label="Voice examples">
+        <article class="sample">
+          <h2>English</h2>
+          <audio controls preload="metadata" src="melotts-en.mp3"></audio>
+        </article>
+        <article class="sample">
+          <h2>English v2</h2>
+          <audio controls preload="metadata" src="melotts-en-v2.mp3"></audio>
+        </article>
+        <article class="sample">
+          <h2>English newest</h2>
+          <audio controls preload="metadata" src="melotts-en-newest.mp3"></audio>
+        </article>
+        <article class="sample">
+          <h2>Spanish</h2>
+          <audio controls preload="metadata" src="melotts-es.mp3"></audio>
+        </article>
+        <article class="sample">
+          <h2>French</h2>
+          <audio controls preload="metadata" src="melotts-fr.mp3"></audio>
+        </article>
+        <article class="sample">
+          <h2>Chinese</h2>
+          <audio controls preload="metadata" src="melotts-zh.mp3"></audio>
+        </article>
+        <article class="sample">
+          <h2>Japanese</h2>
+          <audio controls preload="metadata" src="melotts-jp.mp3"></audio>
+        </article>
+        <article class="sample">
+          <h2>Korean</h2>
+          <audio controls preload="metadata" src="melotts-kr.mp3"></audio>
+        </article>
+      </section>
+
+      <nav class="links" aria-label="Project links">
+        <a href="../">Back to README</a>
+        <a href="https://hub.docker.com/r/sensejworld/melotts/tags">Docker Hub</a>
+        <a href="https://github.com/TheMasterOfDisasters/MeloTTS">GitHub</a>
+      </nav>
+    </main>
+  </body>
+</html>

@@ -21,16 +21,20 @@ Official Docker images are published here: [sensejworld/melotts on Docker Hub](h
 
 Preview MP3 samples from the full multilingual image:
 
-| Language | Sample | File |
-| --- | --- | --- |
-| English | <audio controls src="examples/melotts-en.mp3"></audio> | [MP3](examples/melotts-en.mp3) |
-| English v2 | <audio controls src="examples/melotts-en-v2.mp3"></audio> | [MP3](examples/melotts-en-v2.mp3) |
-| English newest | <audio controls src="examples/melotts-en-newest.mp3"></audio> | [MP3](examples/melotts-en-newest.mp3) |
-| Spanish | <audio controls src="examples/melotts-es.mp3"></audio> | [MP3](examples/melotts-es.mp3) |
-| French | <audio controls src="examples/melotts-fr.mp3"></audio> | [MP3](examples/melotts-fr.mp3) |
-| Chinese | <audio controls src="examples/melotts-zh.mp3"></audio> | [MP3](examples/melotts-zh.mp3) |
-| Japanese | <audio controls src="examples/melotts-jp.mp3"></audio> | [MP3](examples/melotts-jp.mp3) |
-| Korean | <audio controls src="examples/melotts-kr.mp3"></audio> | [MP3](examples/melotts-kr.mp3) |
+[Open the voice examples page](https://themasterofdisasters.github.io/MeloTTS/examples/)
+
+GitHub does not render embedded audio players directly in README files, so direct MP3 links are also provided below.
+
+| Language | Sample |
+| --- | --- |
+| English | [Listen to MP3](examples/melotts-en.mp3) |
+| English v2 | [Listen to MP3](examples/melotts-en-v2.mp3) |
+| English newest | [Listen to MP3](examples/melotts-en-newest.mp3) |
+| Spanish | [Listen to MP3](examples/melotts-es.mp3) |
+| French | [Listen to MP3](examples/melotts-fr.mp3) |
+| Chinese | [Listen to MP3](examples/melotts-zh.mp3) |
+| Japanese | [Listen to MP3](examples/melotts-jp.mp3) |
+| Korean | [Listen to MP3](examples/melotts-kr.mp3) |
 
 ---
 
