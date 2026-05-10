@@ -666,7 +666,7 @@ with gr.Blocks(analytics_enabled=False) as voices_tab:
     voices_json = gr.JSON(label="Loaded Voices", value=get_voice_inventory())
     refresh_voices_btn = gr.Button("Refresh", variant="secondary")
 
-with gr.Blocks(title="MeloTTS", analytics_enabled=False, head=HEAD_HTML) as ui:
+with gr.Blocks(title="MeloTTS", analytics_enabled=False) as ui:
     gr.HTML(f"<style>{BADGE_CSS}</style>")
     gr.HTML(f"<div id='build-badge'>Version: {VERSION} | Build: {BUILD_ID}<br>{RUNTIME_LABEL}</div>")
     gr.HTML(BRAND_HTML)
@@ -870,7 +870,13 @@ async def convert_tts(body: TextModel = Body(...), model: TTS = Depends(get_mode
         return JSONResponse(status_code=500, content={"error": str(error)})
 
 
-app = gr.mount_gradio_app(api, ui, path="/")
+app = gr.mount_gradio_app(
+    api,
+    ui,
+    path="/",
+    favicon_path=str(ICON_PATH) if ICON_PATH.exists() else None,
+    head=HEAD_HTML,
+)
 logger.info("Mounted Gradio UI at / with TTS API routes under /tts")
 
 

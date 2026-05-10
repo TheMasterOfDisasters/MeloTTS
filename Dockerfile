@@ -20,7 +20,7 @@ COPY requirements.txt .
 RUN pip install --upgrade pip setuptools wheel
 RUN pip install -r requirements.txt
 ARG TORCH_INDEX_URL=https://download.pytorch.org/whl/cu128
-ARG TORCH_PACKAGES="torch==2.8.0+cu128 torchaudio==2.8.0+cu128"
+ARG TORCH_PACKAGES="torch==2.11.0+cu128 torchaudio==2.11.0+cu128"
 RUN pip install --index-url ${TORCH_INDEX_URL} ${TORCH_PACKAGES}
 RUN python -m unidic download
 

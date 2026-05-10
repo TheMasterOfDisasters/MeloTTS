@@ -6,7 +6,9 @@ cwd = os.path.dirname(os.path.abspath(__file__))
 version_file = os.path.join(cwd, 'VERSION')
 
 with open(version_file, encoding='utf-8') as f:
-    package_version = f.read().strip()
+    display_version = f.read().strip()
+
+package_version = display_version.removeprefix('v').replace('-SNAPSHOT', '.dev0')
 
 with open('requirements.txt') as f:
     reqs = f.read().splitlines()

@@ -95,4 +95,9 @@ curl -v "http://localhost:8888/tts/speakers?language=EN"
 ## Dependency management
 
     winget install --id=astral-sh.uv -e
-    uv pip compile requirements.txt --resolution lowest --output-file requirements.txt
+    uv pip compile requirements.in --upgrade --python-version 3.10 --no-header --no-annotate --output-file requirements.txt
+
+Docker remains the expected validation environment for dependency upgrades:
+
+    task imagesmall
+    task localapi
