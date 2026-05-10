@@ -1,19 +1,26 @@
+import gc
 import io
-import os
 import json
 import logging
-import gc
+import os
 from pathlib import Path
 
-import gradio as gr
-import torch
 import soundfile as sf
-from fastapi import FastAPI, Body, Depends
-from pydantic import BaseModel
+import torch
+from fastapi import Body, Depends, FastAPI, HTTPException, Query
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, Field
 
 from melo.api import TTS
+from melo.split_utils import split_sentence
 
-# ─── Configuration & Version Info ─────────────────────────────────────────────
+
+APP_ROOT = Path(__file__).resolve().parent.parent
+WEB_ROOT = Path(__file__).resolve().parent / "web"
+
+
 def _read_non_empty_env(name: str):
     value = os.getenv(name)
     if value is None:
@@ -24,7 +31,7 @@ def _read_non_empty_env(name: str):
 
 def _load_build_metadata():
     metadata_path = _read_non_empty_env("BUILD_METADATA_PATH") or str(
-        (Path(__file__).resolve().parent.parent / ".build_meta.json")
+        APP_ROOT / ".build_meta.json"
     )
     try:
         with open(metadata_path, "r", encoding="utf-8") as metadata_file:
@@ -34,15 +41,14 @@ def _load_build_metadata():
     except FileNotFoundError:
         pass
     except Exception as error:
-        logger = logging.getLogger("TTSApp")
-        logger.warning(f"Unable to read build metadata from {metadata_path}: {error}")
+        logging.getLogger("TTSApp").warning(
+            f"Unable to read build metadata from {metadata_path}: {error}"
+        )
     return {}
 
 
 def _load_version_from_file():
-    version_file_path = _read_non_empty_env("VERSION_FILE_PATH") or str(
-        (Path(__file__).resolve().parent.parent / "VERSION")
-    )
+    version_file_path = _read_non_empty_env("VERSION_FILE_PATH") or str(APP_ROOT / "VERSION")
     try:
         with open(version_file_path, "r", encoding="utf-8") as version_file:
             version = version_file.read().strip()
@@ -50,8 +56,9 @@ def _load_version_from_file():
     except FileNotFoundError:
         pass
     except Exception as error:
-        logger = logging.getLogger("TTSApp")
-        logger.warning(f"Unable to read version file at {version_file_path}: {error}")
+        logging.getLogger("TTSApp").warning(
+            f"Unable to read version file at {version_file_path}: {error}"
+        )
     return None
 
 
@@ -64,11 +71,10 @@ def _resolve_runtime_version_and_build():
 
 VERSION, BUILD_ID = _resolve_runtime_version_and_build()
 
-# ─── Logging Setup ─────────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger("TTSApp")
 logger.info(f"Starting TTS UI+API App - Version: {VERSION}, Build: {BUILD_ID}")
@@ -118,9 +124,11 @@ def get_runtime_label():
         logger.warning(f"Could not determine runtime device label: {error}")
     return "Device: CPU"
 
-# ─── Load Your TTS Models ───────────────────────────────────────────────────────
+
 DEVICE = os.getenv("TTS_DEVICE", "auto")
-logger.info(f"Runtime device setting: {DEVICE}; CUDA_VISIBLE_DEVICES={os.getenv('CUDA_VISIBLE_DEVICES', 'not-set')}")
+logger.info(
+    f"Runtime device setting: {DEVICE}; CUDA_VISIBLE_DEVICES={os.getenv('CUDA_VISIBLE_DEVICES', 'not-set')}"
+)
 RUNTIME_LABEL = get_runtime_label()
 logger.info(f"Runtime label: {RUNTIME_LABEL}")
 LANGUAGES = [
@@ -135,250 +143,149 @@ for lang in LANGUAGES:
     try:
         models[lang] = TTS(language=lang, device=DEVICE)
         logger.info(f"Loaded TTS model for {lang}")
-    except Exception as e:
-        logger.error(f"Failed to load model for {lang}: {e}")
-
-# ─── Gradio UI Callbacks ────────────────────────────────────────────────────────
-def synthesize(speaker: str, text: str, speed: float, language: str,  sdp_ratio: float = 0.2, noise_scale: float = 0.6, noise_scale_w: float = 0.8):
-    """
-    Perform TTS synthesis, return WAV bytes.
-    """
-    try:
-        bio = io.BytesIO()
-        model = models.get(language)
-        if not model:
-            logger.error(f"Model not found for language: {language}")
-            return None
-        # Lookup speaker ID via dict-like access; HParams supports __getitem__
-        try:
-            spk_id = model.hps.data.spk2id[speaker]
-        except KeyError:
-            logger.error(f"Invalid speaker: {speaker} for language {language}")
-            return None
-        model.tts_to_file(
-            text,
-            spk_id,
-            bio,
-            speed=speed,
-            sdp_ratio=sdp_ratio,
-            noise_scale=noise_scale,
-            noise_scale_w=noise_scale_w,
-            pbar=None,
-            format="wav"
-        )
-        bio.seek(0)
-        # Gradio 4.x Audio(type="numpy") expects (sample_rate, waveform) output.
-        wav_data, sample_rate = sf.read(bio, dtype="float32")
-        logger.info(f"Synthesized audio for language={language}, speaker={speaker}")
-        return sample_rate, wav_data
-    except Exception as e:
-        logger.exception(f"Error in synthesize callback: {e}")
-        return None
+    except Exception as error:
+        logger.error(f"Failed to load model for {lang}: {error}")
 
 
-def load_speakers(language: str, text: str):
-    """
-    Update speakers dropdown and default text when language changes.
-    """
+DEFAULT_TEXTS = {
+    "EN": "The field of text-to-speech has seen rapid development recently.",
+    "EN_V2": "The field of text-to-speech has seen rapid development recently.",
+    "EN_NEWEST": "The field of text-to-speech has seen rapid development recently.",
+    "ES": "El campo de sintesis de voz ha experimentado un rapido desarrollo recientemente.",
+    "FR": "Le domaine de la synthese vocale a connu un developpement rapide recemment.",
+    "ZH": "最近，文本到语音领域发展迅速。",
+    "JP": "テキストから音声への分野は最近急速に発展しています。",
+    "KR": "텍스트-음성 변환 분야는 최근 급격한 발전을 이루었습니다。",
+}
+
+PARAMETER_PRESETS = {
+    "Balanced": {"speed": 1.0, "sdp_ratio": 0.2, "noise_scale": 0.6, "noise_scale_w": 0.8},
+    "Clear narration": {"speed": 0.92, "sdp_ratio": 0.18, "noise_scale": 0.45, "noise_scale_w": 0.7},
+    "Expressive": {"speed": 1.0, "sdp_ratio": 0.35, "noise_scale": 0.75, "noise_scale_w": 0.9},
+    "Fast preview": {"speed": 1.2, "sdp_ratio": 0.2, "noise_scale": 0.55, "noise_scale_w": 0.75},
+    "Calm": {"speed": 0.85, "sdp_ratio": 0.15, "noise_scale": 0.4, "noise_scale_w": 0.65},
+}
+
+
+def get_speakers_for_language(language):
     model = models.get(language)
     if not model:
-        logger.error(f"No model loaded for language: {language}")
-        return gr.update(choices=[], value=None), text
-    # HParams.data.spk2id is an HParams mapping, use keys()
-    speakers = list(model.hps.data.spk2id.keys())
-    defaults = {
-        "EN": "The field of text-to-speech has seen rapid development recently.",
-        "EN_V2": "The field of text-to-speech has seen rapid development recently.",
-        "EN_NEWEST": "The field of text-to-speech has seen rapid development recently.",
-        "ES": "El campo de síntesis de voz ha experimentado un rápido desarrollo recientemente.",
-        "FR": "Le domaine de la synthèse vocale a connu un développement rapide récemment.",
-        "ZH": "最近，文本到语音领域发展迅速。",
-        "JP": "テキストから音声への分野は最近急速に発展しています。",
-        "KR": "텍스트-음성 변환 분야는 최근 급격한 발전을 이루었습니다。",
+        return []
+    return list(model.hps.data.spk2id.keys())
+
+
+def get_text_metrics(text, language):
+    text = text or ""
+    words = len(text.split())
+    characters = len(text)
+    try:
+        segments = split_sentence(text, language_str=language) if text.strip() else []
+    except Exception as error:
+        logger.warning(f"Could not split text for metrics: {error}")
+        segments = []
+    return {"characters": characters, "words": words, "segments": len(segments)}
+
+
+def get_voice_inventory():
+    return [
+        {
+            "language": language,
+            "status": "loaded" if language in models else "unavailable",
+            "speakers": get_speakers_for_language(language),
+        }
+        for language in LANGUAGES
+    ]
+
+
+def get_status_payload():
+    return {
+        "msg": "pong",
+        "type": "MeloTTS",
+        "version": VERSION,
+        "build_id": BUILD_ID,
+        "device": DEVICE,
+        "runtime": RUNTIME_LABEL,
+        "configured_languages": LANGUAGES,
+        "loaded_languages": list(models.keys()),
+        "presets": PARAMETER_PRESETS,
     }
-    logger.info(f"Updated speakers for language={language}: {speakers}")
-    return gr.update(choices=speakers, value=speakers[0]), defaults.get(language, text)
 
 
-def release_unused_models(language: str):
-    """
-    Keep only the selected language model in memory and release the rest.
-    """
-    global models
-    keep_model = models.get(language)
-    if not keep_model:
-        logger.warning(f"Cannot release models; selected language not loaded: {language}")
-        gr.Warning("No changes: selected language is not currently loaded.")
-        return (
-            gr.update(choices=list(models.keys()), value=None),
-            gr.update(choices=[], value=None),
-        )
+def synthesize_to_wav_bytes(body, model):
+    if not body.text.strip():
+        raise HTTPException(status_code=400, detail="Text must not be empty")
+    try:
+        spk_id = model.hps.data.spk2id[body.speaker_id]
+    except KeyError:
+        raise HTTPException(status_code=400, detail=f"Invalid speaker_id '{body.speaker_id}'")
 
-    removed = [lang for lang in list(models.keys()) if lang != language]
-    models = {language: keep_model}
-
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-
-    speakers = list(keep_model.hps.data.spk2id.keys())
-    logger.info(f"Released models from memory: {removed}. Kept: {language}")
-    status = f"Released {len(removed)} model(s). Kept loaded: {language}."
-    gr.Info(status)
-    return (
-        gr.update(choices=list(models.keys()), value=language),
-        gr.update(choices=speakers, value=speakers[0] if speakers else None),
+    bio = io.BytesIO()
+    model.tts_to_file(
+        body.text,
+        spk_id,
+        bio,
+        speed=body.speed,
+        sdp_ratio=body.sdp_ratio,
+        noise_scale=body.noise_scale,
+        noise_scale_w=body.noise_scale_w,
+        format="wav",
     )
+    bio.seek(0)
+    return bio
 
-# ─── Build Gradio Blocks ────────────────────────────────────────────────────────
-with gr.Blocks(css="""
-#build-badge {
-    position: fixed;
-    top: 12px;
-    right: 12px;
-    z-index: 9999;
-    background: rgba(0, 0, 0, 0.45);
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: 8px;
-    padding: 6px 10px;
-    font-size: 12px;
-    font-family: Arial, sans-serif;
-    backdrop-filter: blur(2px);
-}
-""") as demo:
-    gr.HTML(f"<div id='build-badge'>Version: {VERSION} | Build: {BUILD_ID}<br>{RUNTIME_LABEL}</div>")
-    with gr.Tabs():
-        with gr.Tab("UI Playground"):
-            gr.Markdown("## Multilingual TTS Playground")
-            with gr.Row():
-                language = gr.Dropdown(LANGUAGES, label="Language", value=LANGUAGES[0])
-                purge_btn = gr.Button("Purge others", size="sm", variant="secondary", min_width=120)
-                speaker = gr.Dropdown([], label="Speaker")
-            text = gr.Textbox(lines=3, label="Text")
-            speed = gr.Slider(0.5, 2.0, value=1.0, label="Speed")
-            sdp_ratio = gr.Slider(0.0, 1.0, value=0.2, label="SDP Ratio")
-            noise_scale = gr.Slider(0.0, 1.5, value=0.6, label="Noise Scale")
-            noise_scale_w = gr.Slider(0.0, 1.5, value=0.8, label="Noise Scale W")
-            btn = gr.Button("Synthesize")
-            audio_out = gr.Audio(label="Output Audio")
 
-        with gr.Tab("API Docs"):
-            gr.Markdown(
-                """
-## API Docs
+app = FastAPI(
+    title="MeloTTS",
+    description="MeloTTS static web UI and mounted TTS API",
+    version=VERSION,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
 
-Base path for custom endpoints: `/tts`
-
-### `GET /tts/ping`
-- Health/info endpoint
-- Response example:
-```json
-{
-  "msg": "pong",
-  "type": "MeloTTS",
-  "version": "v0.0.5",
-  "build_id": "17"
-}
-```
-
-### `POST /tts/convert/tts`
-- Convert text to WAV stream
-- JSON body:
-```json
-{
-  "text": "Hello world",
-  "speed": 1.0,
-  "language": "EN",
-  "speaker_id": "EN-BR",
-  "sdp_ratio": 0.2,
-  "noise_scale": 0.6,
-  "noise_scale_w": 0.8
-}
-```
-
-### `GET /tts/languages`
-- Returns currently loaded language codes
-
-### `GET /tts/speakers?language=EN`
-- Returns available speakers for a language
-
-You can also open interactive OpenAPI docs at `/tts/docs`.
-                """
-            )
-
-    # Dynamic speaker loading
-    language.change(
-        load_speakers,
-        inputs=[language, text],
-        outputs=[speaker, text],
-        queue=False,
-    )
-    # Synthesis button
-    btn.click(
-        fn=synthesize,
-        inputs=[speaker, text, speed, language, sdp_ratio, noise_scale, noise_scale_w],
-        outputs=[audio_out],
-        queue=False,
-    )
-    # Release all models except selected language
-    purge_btn.click(
-        fn=release_unused_models,
-        inputs=[language],
-        outputs=[language, speaker],
-        queue=False,
-    )
-    # Initialize speakers and default text on page load
-    demo.load(
-        load_speakers,
-        inputs=[language, text],
-        outputs=[speaker, text],
-        queue=False,
-    )
-
-# ─── Enable Gradio Queue ───────────────────────────────────────────────────────
-logger.info("Enabling Gradio queue: default_concurrency_limit=4, api_open=False")
-demo.queue(default_concurrency_limit=4, api_open=False)
-gr_app = demo.app
-logger.info("Gradio app with queue initialized")
-
-# ─── Build Your TTS FastAPI ────────────────────────────────────────────────────
 tts_app = FastAPI(
     title="TTS Service API",
-    description="API documentation for the TTS service",
+    description="API documentation for the MeloTTS service",
     version=VERSION,
     openapi_url="/tts/openapi.json",
     docs_url="/tts/docs",
-    redoc_url="/tts/redoc"
+    redoc_url="/tts/redoc",
 )
-logger.info("TTS OpenAPI docs available at /tts/docs and OpenAPI spec at /tts/openapi.json")
 
-# Handle Pydantic validation errors to return detailed messages
-from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, StreamingResponse
 
 @tts_app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
     logger.error(f"Validation error for path {request.url.path}: {exc}")
-    return JSONResponse(
-        status_code=422,
-        content={"detail": exc.errors()}
-    )
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+
 
 class TextModel(BaseModel):
-    text: str
-    speed: float = 1.0
-    language: str = "EN"
-    speaker_id: str
-    sdp_ratio: float = 0.2
-    noise_scale: float = 0.6
-    noise_scale_w: float = 0.8
+    text: str = Field(..., description="Text to synthesize.")
+    speed: float = Field(1.0, ge=0.5, le=2.0, description="Speech speed multiplier.")
+    language: str = Field("EN", description="Loaded language/model code.")
+    speaker_id: str = Field(..., description="Speaker ID from /tts/speakers.")
+    sdp_ratio: float = Field(0.2, ge=0.0, le=1.0, description="Stochastic duration predictor ratio.")
+    noise_scale: float = Field(0.6, ge=0.0, le=1.5, description="Acoustic sampling noise.")
+    noise_scale_w: float = Field(0.8, ge=0.0, le=1.5, description="Duration sampling noise.")
+
+
+class MetricsModel(BaseModel):
+    text: str = Field("", description="Text to inspect.")
+    language: str = Field("EN", description="Language/model code used for sentence splitting.")
+
 
 def get_model(body: TextModel) -> TTS:
     model = models.get(body.language)
     if not model:
         logger.error(f"Requested model not available: {body.language}")
+        raise HTTPException(status_code=404, detail=f"Language '{body.language}' is not loaded")
     return model
+
+
+@app.get("/", include_in_schema=False)
+async def index():
+    return FileResponse(WEB_ROOT / "index.html")
+
 
 @tts_app.get("/ping")
 async def ping():
@@ -387,79 +294,108 @@ async def ping():
         "msg": "pong",
         "type": "MeloTTS",
         "version": VERSION,
-        "build_id": BUILD_ID
+        "build_id": BUILD_ID,
     }
 
-@tts_app.post("/convert/tts")
-async def convert_tts(
-        body: TextModel = Body(...),
-        model: TTS = Depends(get_model)
-):
-    """
-    Convert text to speech and stream WAV bytes directly, without writing to disk.
-    """
-    logger.info(f"/tts/convert/tts request: {body}")
-    # Validate and retrieve speaker ID
-    try:
-        spk_id = model.hps.data.spk2id[body.speaker_id]
-    except KeyError:
-        logger.warning(f"Invalid speaker_id: {body.speaker_id}")
-        return JSONResponse(status_code=400, content={"error": f"Invalid speaker_id '{body.speaker_id}'"})
 
-    # Use in-memory buffer
-    bio = io.BytesIO()
-    try:
-        model.tts_to_file(
-            body.text,
-            spk_id,
-            bio,
-            speed=body.speed,
-            sdp_ratio=body.sdp_ratio,
-            noise_scale=body.noise_scale,
-            noise_scale_w=body.noise_scale_w,
-            format="wav"
-        )
-        bio.seek(0)
-        logger.info(f"Streamed TTS audio for language={body.language}, speaker={body.speaker_id}")
-        return StreamingResponse(
-            bio,
-            media_type="audio/wav",
-            headers={"Content-Disposition": f"attachment; filename=tts_{body.language}.wav"}
-        )
-    except Exception as e:
-        logger.error(f"Error during TTS generation: {e}")
-        return JSONResponse(status_code=500, content={"error": str(e)})
+@tts_app.get("/status")
+async def status():
+    logger.info("/tts/status request received")
+    return get_status_payload()
 
-# ─── Additional TTS API Endpoints ─────────────────────────────────────────────
+
+@tts_app.get("/defaults")
+async def defaults():
+    logger.info("/tts/defaults request received")
+    return {"texts": DEFAULT_TEXTS, "presets": PARAMETER_PRESETS}
+
+
 @tts_app.get("/languages")
 async def list_languages():
-    """Return available languages."""
     logger.info("/tts/languages request received")
-    return {"languages": LANGUAGES}
+    return {"languages": LANGUAGES, "loaded_languages": list(models.keys())}
+
 
 @tts_app.get("/speakers")
-async def list_speakers(language: str):
-    """Return available speakers for a given language query parameter."""
+async def list_speakers(language: str = Query(..., description="Loaded language code")):
     logger.info(f"/tts/speakers request received for language={language}")
     model = models.get(language)
     if not model:
         logger.warning(f"Requested speakers for unknown language: {language}")
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Language not found")
-    return {"speakers": list(model.hps.data.spk2id.keys())}
+    return {"language": language, "speakers": list(model.hps.data.spk2id.keys())}
 
-# ─── Mount TTS API on Gradio App ─────────────────────────────────────────────────
-gr_app.mount("/tts", tts_app)
-logger.info("Mounted TTS API at /tts on Gradio app")
 
-# ─── Entrypoint ────────────────────────────────────────────────────────────────
+@tts_app.get("/voices")
+async def voices():
+    logger.info("/tts/voices request received")
+    return {"voices": get_voice_inventory()}
+
+
+@tts_app.post("/metrics")
+async def metrics(body: MetricsModel = Body(...)):
+    logger.info(f"/tts/metrics request received for language={body.language}")
+    return {"language": body.language, "metrics": get_text_metrics(body.text, body.language)}
+
+
+@tts_app.post("/purge")
+async def purge_models(language: str = Body(..., embed=True)):
+    global models
+    keep_model = models.get(language)
+    if not keep_model:
+        raise HTTPException(status_code=404, detail=f"Language '{language}' is not loaded")
+    removed = [lang for lang in list(models.keys()) if lang != language]
+    models = {language: keep_model}
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+    logger.info(f"Released models from memory: {removed}. Kept: {language}")
+    return {"kept": language, "removed": removed, "loaded_languages": list(models.keys())}
+
+
+@tts_app.post("/convert/tts")
+async def convert_tts(body: TextModel = Body(...), model: TTS = Depends(get_model)):
+    logger.info(f"/tts/convert/tts request: {body}")
+    try:
+        bio = synthesize_to_wav_bytes(body, model)
+        audio, sample_rate = sf.read(bio, dtype="float32")
+        duration = len(audio) / sample_rate if sample_rate else 0
+        bio.seek(0)
+        logger.info(
+            f"Streamed TTS audio for language={body.language}, speaker={body.speaker_id}, duration={duration:.2f}s"
+        )
+        return StreamingResponse(
+            bio,
+            media_type="audio/wav",
+            headers={
+                "Content-Disposition": f"attachment; filename=tts_{body.language}.wav",
+                "X-MeloTTS-Language": body.language,
+                "X-MeloTTS-Speaker": body.speaker_id,
+                "X-MeloTTS-Sample-Rate": str(sample_rate),
+                "X-MeloTTS-Duration": f"{duration:.3f}",
+            },
+        )
+    except HTTPException:
+        raise
+    except Exception as error:
+        logger.error(f"Error during TTS generation: {error}")
+        return JSONResponse(status_code=500, content={"error": str(error)})
+
+
+app.mount("/assets", StaticFiles(directory=str(WEB_ROOT)), name="assets")
+app.mount("/tts", tts_app)
+logger.info("Mounted static UI at / and TTS API at /tts")
+
+
 def main():
     import uvicorn
+
     logger.info("Starting server on 0.0.0.0:8888")
-    uvicorn.run(gr_app, host="0.0.0.0", port=8888, log_level="info")
+    uvicorn.run(app, host="0.0.0.0", port=8888, log_level="info")
+
 
 if __name__ == "__main__":
     try:
         main()
-    except Exception as e:
-        logger.exception(f"Application crashed: {e}")
+    except Exception as error:
+        logger.exception(f"Application crashed: {error}")

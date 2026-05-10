@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MeloTTS Studio</title>
+    <link rel="stylesheet" href="/assets/tailwind.css" />
+  </head>
+  <body class="min-h-screen bg-slate-950 text-slate-100">
+    <main class="mx-auto flex min-h-screen w-full max-w-7xl flex-col gap-6 px-4 py-6 lg:px-8">
+      <header class="flex flex-col gap-4 border-b border-slate-800 pb-5 lg:flex-row lg:items-end lg:justify-between">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-cyan-300">MeloTTS</p>
+          <h1 class="mt-2 text-3xl font-semibold tracking-tight text-white">TTS Studio</h1>
+          <p class="mt-2 max-w-3xl text-sm text-slate-300">
+            Generate speech from loaded models, tune synthesis, and use the API from the same Docker runtime.
+          </p>
+        </div>
+        <div class="grid gap-2 rounded-lg border border-slate-800 bg-slate-900 px-4 py-3 text-xs text-slate-300">
+          <div><span class="text-slate-500">Version</span> <span id="version">...</span></div>
+          <div><span class="text-slate-500">Build</span> <span id="build">...</span></div>
+          <div><span class="text-slate-500">Runtime</span> <span id="runtime">...</span></div>
+        </div>
+      </header>
+
+      <section class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
+        <div class="rounded-lg border border-slate-800 bg-slate-900 shadow-xl">
+          <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 px-5 py-4">
+            <div>
+              <h2 class="text-lg font-semibold text-white">Synthesis</h2>
+              <p class="text-sm text-slate-400">Write text, choose a voice, then generate a WAV.</p>
+            </div>
+            <div id="status-pill" class="rounded-full bg-slate-800 px-3 py-1 text-xs font-medium text-slate-300">Ready</div>
+          </div>
+
+          <div class="grid gap-5 p-5">
+            <label class="grid gap-2">
+              <span class="text-sm font-medium text-slate-200">Text</span>
+              <textarea id="text" rows="11" class="w-full resize-y rounded-md border border-slate-700 bg-slate-950 p-4 text-sm leading-6 text-slate-100 outline-none transition focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/20"></textarea>
+            </label>
+
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div id="metrics" class="text-sm text-slate-400">0 characters | 0 words | 0 segments</div>
+              <div class="flex flex-wrap gap-2">
+                <button id="sample" class="btn-secondary">Load sample</button>
+                <button id="normalize" class="btn-secondary">Normalize spacing</button>
+                <button id="generate" class="btn-primary">Synthesize</button>
+              </div>
+            </div>
+
+            <audio id="audio" controls class="w-full"></audio>
+            <a id="download" class="hidden text-sm font-medium text-cyan-300 hover:text-cyan-200" download="melotts-output.wav">Download generated WAV</a>
+          </div>
+        </div>
+
+        <aside class="grid content-start gap-4">
+          <section class="rounded-lg border border-slate-800 bg-slate-900 p-5 shadow-xl">
+            <h2 class="text-lg font-semibold text-white">Voice</h2>
+            <div class="mt-4 grid gap-4">
+              <label class="grid gap-2">
+                <span class="text-sm font-medium text-slate-300">Language</span>
+                <select id="language" class="control"></select>
+              </label>
+              <label class="grid gap-2">
+                <span class="text-sm font-medium text-slate-300">Speaker</span>
+                <select id="speaker" class="control"></select>
+              </label>
+              <label class="grid gap-2">
+                <span class="text-sm font-medium text-slate-300">Preset</span>
+                <select id="preset" class="control"></select>
+              </label>
+            </div>
+          </section>
+
+          <section class="rounded-lg border border-slate-800 bg-slate-900 p-5 shadow-xl">
+            <h2 class="text-lg font-semibold text-white">Controls</h2>
+            <div class="mt-4 grid gap-4">
+              <label class="range-row">
+                <span>Speed</span>
+                <output id="speed-value">1.00</output>
+                <input id="speed" type="range" min="0.5" max="2" step="0.05" value="1" />
+              </label>
+              <details class="rounded-md border border-slate-800 bg-slate-950 p-3">
+                <summary class="cursor-pointer text-sm font-medium text-slate-300">Advanced synthesis</summary>
+                <div class="mt-4 grid gap-4">
+                  <label class="range-row">
+                    <span>SDP Ratio</span>
+                    <output id="sdp-ratio-value">0.20</output>
+                    <input id="sdp-ratio" type="range" min="0" max="1" step="0.01" value="0.2" />
+                  </label>
+                  <label class="range-row">
+                    <span>Noise Scale</span>
+                    <output id="noise-scale-value">0.60</output>
+                    <input id="noise-scale" type="range" min="0" max="1.5" step="0.01" value="0.6" />
+                  </label>
+                  <label class="range-row">
+                    <span>Noise Scale W</span>
+                    <output id="noise-scale-w-value">0.80</output>
+                    <input id="noise-scale-w" type="range" min="0" max="1.5" step="0.01" value="0.8" />
+                  </label>
+                </div>
+              </details>
+            </div>
+          </section>
+        </aside>
+      </section>
+
+      <section class="grid gap-6 lg:grid-cols-2">
+        <div class="rounded-lg border border-slate-800 bg-slate-900 p-5">
+          <div class="flex items-center justify-between gap-3">
+            <h2 class="text-lg font-semibold text-white">Loaded Voices</h2>
+            <button id="refresh-voices" class="btn-secondary">Refresh</button>
+          </div>
+          <div id="voices" class="mt-4 grid gap-3"></div>
+        </div>
+
+        <div class="rounded-lg border border-slate-800 bg-slate-900 p-5">
+          <h2 class="text-lg font-semibold text-white">API</h2>
+          <p class="mt-2 text-sm text-slate-400">Custom endpoints are served under <code>/tts</code>.</p>
+          <pre class="mt-4 overflow-x-auto rounded-md bg-slate-950 p-4 text-xs text-slate-300"><code>curl -X POST "http://localhost:8888/tts/convert/tts" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Hello world","language":"EN","speaker_id":"EN-BR"}' \
+  -o output.wav</code></pre>
+          <div class="mt-4 flex flex-wrap gap-2 text-sm">
+            <a class="link" href="/tts/docs">OpenAPI docs</a>
+            <a class="link" href="/tts/languages">Languages JSON</a>
+            <a class="link" href="/tts/status">Runtime JSON</a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="/assets/app.js"></script>
+  </body>
+</html>

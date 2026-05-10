@@ -93,6 +93,11 @@ Current tag pattern:
 - Removed stale phonemizer generation artifacts and notebook files that were not read by runtime synthesis.
 - Cleaned stale imports, unused locals, and unreachable flow-layer code found by lint checks.
 - Improved Taskfile API readiness checks by retrying transient startup errors such as `Empty reply from server`.
+- Replaced the Gradio-hosted UI with a FastAPI-served `MeloTTS Studio` static frontend using local Tailwind-style CSS assets.
+- Added text metrics, voice inventory, synthesis presets, advanced controls, runtime metadata, and richer in-app API documentation.
+- Added `/tts/status`, `/tts/defaults`, `/tts/voices`, `/tts/metrics`, and `/tts/purge` endpoints for the new UI and companion integrations.
+- Expanded rapid local iteration tasks so `task localrun`, `task localdev`, and `task localapi` bind-mount both `melo/app.py` and `melo/web`.
+- Added `todo/FEATURE_IDEAS.md` with practical UI/API/runtime improvements that fit the current codebase.
 - Documentation: corrected API examples to use `/tts/convert/tts` JSON payloads and documented the current runtime-only scope.
 
 ### v0.0.7 (29.03.2026)

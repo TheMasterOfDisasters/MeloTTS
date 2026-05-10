@@ -36,6 +36,16 @@ You need docker to be working. (Example : Docker Desktop)
 ### Check UI
 Open http://localhost:8888
 
+### Rapid local UI/API loop
+After building an image once, use the bind-mounted tasks for app and static frontend edits:
+
+```bash
+task localdev
+task localapi
+```
+
+These mount `melo/app.py` and `melo/web` into the container so most UI/API changes do not require a Docker rebuild.
+
 ### Check API - ping
 ```bash
 curl -v http://localhost:8888/tts/ping

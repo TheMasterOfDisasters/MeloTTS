@@ -11,6 +11,7 @@ vars:
   LANG_EN: EN
   LANG_FULL: EN,EN_V2,EN_NEWEST,ES,FR,ZH,JP,KR
   TEMP_WAV: '%TEMP%\\melotts_task.wav'
+  WAIT_URL: http://localhost:{{.PORT}}/tts/ping
 
 tasks:
   gpuinfo:
@@ -43,6 +44,11 @@ tasks:
     cmds:
       - cmd /c start "" "http://localhost:{{.PORT}}"
 
+  imagewait:
+    desc: Wait until the MeloTTS API is ready
+    cmds:
+      - 'cmd /c curl.exe -sS --retry 30 --retry-delay 2 --retry-connrefused --retry-all-errors {{.WAIT_URL}} >nul'
+
   imagestop:
     desc: Stop running MeloTTS test containers
     cmds:
@@ -64,7 +70,7 @@ tasks:
       - cmd /c docker ps --filter "name={{.CONTAINER_EN}}"
 
   localrun:
-    desc: Run image with local melo/app.py bind-mounted for quick app.py testing (default GPU_DEVICE=0)
+    desc: Run image with local melo/app.py and melo/web bind-mounted for quick UI/API testing (default GPU_DEVICE=0)
     cmds:
       - cmd: cmd /c docker rm -f {{.CONTAINER_EN}} >nul 2>&1
         ignore_error: true
@@ -72,11 +78,29 @@ tasks:
         ignore_error: true
       - cmd: cmd /c docker rm -f {{.CONTAINER_LOCAL}} >nul 2>&1
         ignore_error: true
-      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_EN}} -v "{{.TASKFILE_DIR}}\melo\app.py:/app/melo/app.py:ro" {{.IMAGE}}
+      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_EN}} -v "{{.TASKFILE_DIR}}\melo\app.py:/app/melo/app.py:ro" -v "{{.TASKFILE_DIR}}\melo\web:/app/melo/web:ro" {{.IMAGE}}
       - cmd /c docker ps --filter "name={{.CONTAINER_LOCAL}}"
 
+  localdev:
+    desc: Restart local app.py/web bind mount, wait for readiness, then open the UI
+    cmds:
+      - task: localrun
+      - task: imagewait
+      - task: imageweb
+
+  localapi:
+    desc: Restart local app.py/web bind mount, wait for readiness, then call the TTS API
+    cmds:
+      - task: localrun
+      - task: imageapi
+
+  locallogs:
+    desc: Follow logs for the local app.py bind-mounted container
+    cmds:
+      - cmd /c docker logs -f {{.CONTAINER_LOCAL}}
+
   localrunfull:
-    desc: Run image with local melo/app.py bind-mounted and full language set (default GPU_DEVICE=0)
+    desc: Run image with local melo/app.py and melo/web bind-mounted and full language set (default GPU_DEVICE=0)
     cmds:
       - cmd: cmd /c docker rm -f {{.CONTAINER_EN}} >nul 2>&1
         ignore_error: true
@@ -84,13 +108,13 @@ tasks:
         ignore_error: true
       - cmd: cmd /c docker rm -f {{.CONTAINER_LOCAL}} >nul 2>&1
         ignore_error: true
-      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_FULL}} -v "{{.TASKFILE_DIR}}\melo\app.py:/app/melo/app.py:ro" {{.IMAGE}}
+      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_FULL}} -v "{{.TASKFILE_DIR}}\melo\app.py:/app/melo/app.py:ro" -v "{{.TASKFILE_DIR}}\melo\web:/app/melo/web:ro" {{.IMAGE}}
       - cmd /c docker ps --filter "name={{.CONTAINER_LOCAL}}"
 
   imageapi:
     desc: Call TTS API, play generated temp WAV, then remove it
     cmds:
-      - 'cmd /c curl.exe -sS --retry 30 --retry-delay 2 --retry-connrefused --retry-all-errors http://localhost:{{.PORT}}/tts/ping >nul'
+      - task: imagewait
       - 'cmd /c curl.exe -sS -X POST http://localhost:{{.PORT}}/tts/convert/tts -H "Content-Type: application/json" -d "{\"text\":\"Hello world. I wanted to test this and see if this works properly\",\"speed\":1.0,\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"sdp_ratio\":0.21,\"noise_scale\":0.61,\"noise_scale_w\":0.81}" --output {{.TEMP_WAV}}'
       - 'cmd /c if not exist {{.TEMP_WAV}} exit /b 1'
       - 'cmd /c python -c "import winsound; winsound.PlaySound(r''{{.TEMP_WAV}}'', winsound.SND_FILENAME)"'
