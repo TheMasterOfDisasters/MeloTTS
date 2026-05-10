@@ -90,7 +90,7 @@ Main tag strategy:
 - Cleaned stale imports, unused locals, and unreachable flow-layer code found by lint checks.
 - Improved Taskfile API readiness checks by retrying transient startup errors such as `Empty reply from server`.
 - Reworked the UI into a Kokoro-style Gradio layout while keeping MeloTTS language, speaker, preset, and advanced synthesis controls.
-- Added text metrics, voice inventory, synthesis presets, advanced controls, Gradio audio waveform preview, runtime metadata, and richer API documentation links.
+- Added text metrics, per-language random quotes, voice inventory, synthesis presets, advanced controls, Gradio audio waveform preview, runtime metadata, and richer API documentation links.
 - Added `/tts/status`, `/tts/defaults`, `/tts/voices`, `/tts/metrics`, and `/tts/purge` endpoints for the new UI and companion integrations.
 - Expanded rapid local iteration tasks so `task localrun`, `task localdev`, and `task localapi` bind-mount `melo/app.py`.
 - Added `todo/FEATURE_IDEAS.md` with practical UI/API/runtime improvements that fit the current codebase.

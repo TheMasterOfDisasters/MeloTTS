@@ -3,6 +3,7 @@ import io
 import json
 import logging
 import os
+import random
 from pathlib import Path
 
 os.environ.setdefault("GRADIO_ANALYTICS_ENABLED", "False")
@@ -162,6 +163,105 @@ DEFAULT_TEXTS = {
     "KR": "텍스트-음성 변환 분야는 최근 급격한 발전을 이루었습니다。",
 }
 
+QUOTE_BANK = {
+    "EN": [
+        "A clear voice can make a simple sentence feel alive.",
+        "Every small test teaches the system something useful.",
+        "The morning light moved slowly across the quiet room.",
+        "Good tools should stay out of the way and help the work flow.",
+        "Speech turns written ideas into something people can feel.",
+        "A careful listener notices rhythm before individual words.",
+        "The fastest path is often the one that stays simple.",
+        "Today is a good day to make the interface easier to use.",
+        "Strong software grows from many small and practical decisions.",
+        "When the sound is natural, the text becomes easier to trust.",
+    ],
+    "EN_V2": [
+        "A clear voice can make a simple sentence feel alive.",
+        "Every small test teaches the system something useful.",
+        "The morning light moved slowly across the quiet room.",
+        "Good tools should stay out of the way and help the work flow.",
+        "Speech turns written ideas into something people can feel.",
+        "A careful listener notices rhythm before individual words.",
+        "The fastest path is often the one that stays simple.",
+        "Today is a good day to make the interface easier to use.",
+        "Strong software grows from many small and practical decisions.",
+        "When the sound is natural, the text becomes easier to trust.",
+    ],
+    "EN_NEWEST": [
+        "A clear voice can make a simple sentence feel alive.",
+        "Every small test teaches the system something useful.",
+        "The morning light moved slowly across the quiet room.",
+        "Good tools should stay out of the way and help the work flow.",
+        "Speech turns written ideas into something people can feel.",
+        "A careful listener notices rhythm before individual words.",
+        "The fastest path is often the one that stays simple.",
+        "Today is a good day to make the interface easier to use.",
+        "Strong software grows from many small and practical decisions.",
+        "When the sound is natural, the text becomes easier to trust.",
+    ],
+    "ES": [
+        "Una voz clara puede dar vida a una frase sencilla.",
+        "Cada prueba pequena ensena algo util al sistema.",
+        "La luz de la manana avanzo despacio por la habitacion tranquila.",
+        "Las buenas herramientas ayudan sin llamar demasiado la atencion.",
+        "La voz convierte las ideas escritas en una experiencia cercana.",
+        "Quien escucha con atencion percibe primero el ritmo.",
+        "El camino mas rapido suele ser el que mantiene todo simple.",
+        "Hoy es un buen dia para mejorar la interfaz.",
+        "El buen software crece con decisiones pequenas y practicas.",
+        "Cuando el sonido es natural, el texto resulta mas confiable.",
+    ],
+    "FR": [
+        "Une voix claire peut donner vie a une phrase simple.",
+        "Chaque petit test apprend quelque chose d utile au systeme.",
+        "La lumiere du matin avancait lentement dans la piece calme.",
+        "Les bons outils aident sans attirer trop d attention.",
+        "La parole transforme les idees ecrites en experience proche.",
+        "Une personne attentive remarque le rythme avant les mots.",
+        "Le chemin le plus rapide reste souvent le plus simple.",
+        "Aujourd hui est un bon jour pour rendre l interface plus agreable.",
+        "Un bon logiciel grandit grace a de petites decisions pratiques.",
+        "Quand le son parait naturel, le texte inspire davantage confiance.",
+    ],
+    "ZH": [
+        "清晰的声音能让简单的句子变得生动。",
+        "每一次小测试都会让系统学到有用的东西。",
+        "清晨的光慢慢移过安静的房间。",
+        "好的工具应该安静地帮助工作顺利进行。",
+        "语音把写下的想法变成可以感受的内容。",
+        "细心的听众会先注意到节奏。",
+        "最快的道路往往是保持简单的道路。",
+        "今天很适合让界面变得更好用。",
+        "可靠的软件来自许多小而实际的决定。",
+        "当声音自然时，文字也更容易被信任。",
+    ],
+    "JP": [
+        "澄んだ声は、短い文にも命を吹き込みます。",
+        "小さなテストのたびに、システムは役立つことを学びます。",
+        "朝の光が静かな部屋をゆっくり進んでいきました。",
+        "よい道具は作業を静かに支えてくれます。",
+        "音声は書かれた考えを身近な体験に変えます。",
+        "注意深く聞く人は、言葉より先にリズムに気づきます。",
+        "いちばん速い道は、たいていシンプルな道です。",
+        "今日は画面をもっと使いやすくするのに良い日です。",
+        "良いソフトウェアは、小さく実用的な判断から育ちます。",
+        "音が自然だと、文章も信頼しやすくなります。",
+    ],
+    "KR": [
+        "맑은 목소리는 짧은 문장에도 생기를 줍니다.",
+        "작은 테스트마다 시스템은 유용한 것을 배웁니다.",
+        "아침 햇살이 조용한 방 안을 천천히 지나갔습니다.",
+        "좋은 도구는 일을 조용히 도와야 합니다.",
+        "음성은 글로 쓴 생각을 더 가까운 경험으로 바꿉니다.",
+        "주의 깊게 듣는 사람은 단어보다 리듬을 먼저 느낍니다.",
+        "가장 빠른 길은 대개 단순함을 지키는 길입니다.",
+        "오늘은 인터페이스를 더 쓰기 좋게 만들기에 좋은 날입니다.",
+        "좋은 소프트웨어는 작고 실용적인 결정에서 자랍니다.",
+        "소리가 자연스러우면 글도 더 신뢰하기 쉬워집니다.",
+    ],
+}
+
 PARAMETER_PRESETS = {
     "Balanced": {"speed": 1.0, "sdp_ratio": 0.2, "noise_scale": 0.6, "noise_scale_w": 0.8},
     "Clear narration": {"speed": 0.92, "sdp_ratio": 0.18, "noise_scale": 0.45, "noise_scale_w": 0.7},
@@ -315,8 +415,10 @@ def normalize_text(text):
     return " ".join((text or "").split())
 
 
-def load_sample(language):
-    return DEFAULT_TEXTS.get(language, DEFAULT_TEXTS["EN"])
+def load_random_quote(language):
+    quotes = QUOTE_BANK.get(language) or QUOTE_BANK["EN"]
+    quote = random.choice(quotes)
+    return quote, metrics_for_ui(quote, language)
 
 
 def metrics_for_ui(text, language):
@@ -442,7 +544,7 @@ with gr.Blocks(title="MeloTTS", analytics_enabled=False) as ui:
                     step=0.01,
                     label="Noise Scale W",
                 )
-            sample_btn = gr.Button("Load Sample", variant="secondary")
+            sample_btn = gr.Button("Random Quote", variant="secondary")
             with gr.Row():
                 normalize_btn = gr.Button("Normalize Spacing", variant="secondary")
                 purge_btn = gr.Button("Purge Other Models", variant="secondary")
@@ -453,8 +555,7 @@ with gr.Blocks(title="MeloTTS", analytics_enabled=False) as ui:
     language.change(metrics_for_ui, inputs=[text, language], outputs=[metrics_box])
     text.change(metrics_for_ui, inputs=[text, language], outputs=[metrics_box])
     preset.change(apply_preset, inputs=[preset], outputs=[speed, sdp_ratio, noise_scale, noise_scale_w])
-    sample_btn.click(load_sample, inputs=[language], outputs=[text])
-    sample_btn.click(metrics_for_ui, inputs=[text, language], outputs=[metrics_box])
+    sample_btn.click(load_random_quote, inputs=[language], outputs=[text, metrics_box])
     normalize_btn.click(normalize_text, inputs=[text], outputs=[text])
     normalize_btn.click(metrics_for_ui, inputs=[text, language], outputs=[metrics_box])
     purge_btn.click(release_unused_models_for_ui, inputs=[language], outputs=[language, speaker])
@@ -498,7 +599,7 @@ async def status():
 @api.get("/tts/defaults")
 async def defaults():
     logger.info("/tts/defaults request received")
-    return {"texts": DEFAULT_TEXTS, "presets": PARAMETER_PRESETS}
+    return {"texts": DEFAULT_TEXTS, "quotes": QUOTE_BANK, "presets": PARAMETER_PRESETS}
 
 
 @api.get("/tts/languages")
