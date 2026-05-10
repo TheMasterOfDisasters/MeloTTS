@@ -1,4 +1,3 @@
-from .cleaner import french_cleaners
 from .gruut_wrapper import Gruut
 
 

@@ -1,16 +1,13 @@
 # Convert Japanese text to phonemes which is
 # compatible with Julius https://github.com/julius-speech/segmentation-kit
 import re
-import unicodedata
 
 from transformers import AutoTokenizer
 
 from . import punctuation, symbols
 
 
-from num2words import num2words
 from melo.text.ko_dictionary import english_dictionary, etc_dictionary
-from anyascii import anyascii
 from jamo import hangul_to_jamo
 
 def normalize(text):

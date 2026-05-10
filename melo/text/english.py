@@ -188,8 +188,6 @@ def text_normalize(text):
 model_id = 'bert-base-uncased'
 tokenizer = AutoTokenizer.from_pretrained(model_id)
 def g2p_old(text):
-    tokenized = tokenizer.tokenize(text)
-    # import pdb; pdb.set_trace()
     phones = []
     tones = []
     words = re.split(r"([,;.\-\?\!\s+])", text)
@@ -217,8 +215,6 @@ def g2p_old(text):
 def g2p(text, pad_start_end=True, tokenized=None):
     if tokenized is None:
         tokenized = tokenizer.tokenize(text)
-    # import pdb; pdb.set_trace()
-    phs = []
     ph_groups = []
     for t in tokenized:
         if not t.startswith("#"):

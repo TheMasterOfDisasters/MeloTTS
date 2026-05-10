@@ -1,5 +1,3 @@
-import pickle
-import os
 import re
 
 from . import symbols
@@ -68,8 +66,6 @@ tokenizer = AutoTokenizer.from_pretrained(model_id)
 def g2p(text, pad_start_end=True, tokenized=None):
     if tokenized is None:
         tokenized = tokenizer.tokenize(text)
-    # import pdb; pdb.set_trace()
-    phs = []
     ph_groups = []
     for t in tokenized:
         if not t.startswith("#"):

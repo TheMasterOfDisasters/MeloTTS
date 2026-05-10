@@ -1,4 +1,3 @@
-from .cleaner import spanish_cleaners
 from .gruut_wrapper import Gruut
 
 def es2ipa(text):

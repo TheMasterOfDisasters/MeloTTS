@@ -53,7 +53,10 @@ Then open: **[http://localhost:8888](http://localhost:8888)**
 ## 🌐 API Usage Example
 
 ```bash
-curl -X POST "http://localhost:8888/api/tts"   -F "text=Hello world!"   -F "language=EN"   -o output.wav
+curl -X POST "http://localhost:8888/tts/convert/tts" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Hello world!","language":"EN","speaker_id":"EN-BR"}' \
+  -o output.wav
 ```
 
 ---
@@ -84,10 +87,13 @@ Current tag pattern:
 ## 📜 Version History
 
 ### v0.0.8 (planned)
-- Platform: ongoing runtime and stack alignment.
-- Dependencies: another grouped refresh of core libraries.
-- Reliability: further hardening for offline and startup behavior.
-- Release process: keep branch-first validation before tagging.
+- Scope: runtime-focused cleanup for the Docker UI/API fork.
+- Removed unused upstream training surfaces, including training scripts/modules, training example data, legacy script-style package tests, and original upstream docs that no longer matched this fork.
+- Trimmed runtime helper code by reducing `melo/utils.py` to inference text preparation, config loading, and `HParams`.
+- Removed stale phonemizer generation artifacts and notebook files that were not read by runtime synthesis.
+- Cleaned stale imports, unused locals, and unreachable flow-layer code found by lint checks.
+- Improved Taskfile API readiness checks by retrying transient startup errors such as `Empty reply from server`.
+- Documentation: corrected API examples to use `/tts/convert/tts` JSON payloads and documented the current runtime-only scope.
 
 ### v0.0.7 (29.03.2026)
 - Upgraded Docker runtime/build baseline to Python 3.10 (`python:3.10-slim`) and aligned packaging with `python_requires>=3.10`.
@@ -136,7 +142,7 @@ Current tag pattern:
 ### v0.0.4 (09.08.2025)
 - **Dependency updates** for improved performance and stability.
 - **Full offline support** — all required models are now baked into the image.
-- **Model overwrite option**: set `MELOTTS_MODELS` to point to your custom model folder.
+- **Model overwrite option**: set `MELOTTTS_MODELS` to point to your custom model folder.
 - **Smaller image size** via optimized multi-stage Docker build.
 - Run with:
   ```bash
