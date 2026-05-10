@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="logo.png" alt="MeloTTS logo" width="320">
+</p>
+
 # MeloTTS — Maintained & Easy-to-Use Fork 🛠️
 
 This project is an independently maintained fork of the original [MeloTTS](https://github.com/myshell-ai/MeloTTS) by [Wenliang Zhao](https://github.com/wl-zhao), [Xumin Yu](https://github.com/yuxumin), and [Zengyi Qin](https://github.com/Zengyi-Qin).  
@@ -94,7 +98,7 @@ Current tag pattern:
 - Cleaned stale imports, unused locals, and unreachable flow-layer code found by lint checks.
 - Improved Taskfile API readiness checks by retrying transient startup errors such as `Empty reply from server`.
 - Reworked the UI into a Kokoro-style Gradio layout while keeping MeloTTS language, speaker, preset, and advanced synthesis controls.
-- Added text metrics, per-language random quotes, voice inventory, synthesis presets, advanced controls, Gradio audio waveform preview, runtime metadata, and richer API documentation links.
+- Added text metrics, per-language random quotes, voice inventory, synthesis presets, advanced controls, Gradio audio waveform preview, runtime metadata, favicon/brand icon, and richer API documentation links.
 - Added `/tts/status`, `/tts/defaults`, `/tts/voices`, `/tts/metrics`, and `/tts/purge` endpoints for the new UI and companion integrations.
 - Expanded rapid local iteration tasks so `task localrun`, `task localdev`, and `task localapi` bind-mount `melo/app.py`.
 - Added `todo/FEATURE_IDEAS.md` with practical UI/API/runtime improvements that fit the current codebase.

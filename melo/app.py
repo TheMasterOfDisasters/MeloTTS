@@ -1,3 +1,4 @@
+import base64
 import gc
 import io
 import json
@@ -21,6 +22,7 @@ from melo.split_utils import split_sentence
 
 
 APP_ROOT = Path(__file__).resolve().parent.parent
+ICON_PATH = APP_ROOT / "icon.png"
 
 
 def _read_non_empty_env(name: str):
@@ -454,6 +456,16 @@ def release_unused_models_for_ui(language):
     )
 
 
+def load_icon_data_uri():
+    try:
+        return "data:image/png;base64," + base64.b64encode(ICON_PATH.read_bytes()).decode("ascii")
+    except FileNotFoundError:
+        logger.warning(f"UI icon not found at {ICON_PATH}")
+    except Exception as error:
+        logger.warning(f"Unable to load UI icon from {ICON_PATH}: {error}")
+    return ""
+
+
 BADGE_CSS = """
 #build-badge {
     position: fixed;
@@ -469,7 +481,29 @@ BADGE_CSS = """
     font-family: Arial, sans-serif;
     backdrop-filter: blur(2px);
 }
+#brand-strip {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+#brand-strip img {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+}
+#brand-strip strong {
+    font-size: 20px;
+}
 """
+
+ICON_DATA_URI = load_icon_data_uri()
+HEAD_HTML = f'<link rel="icon" type="image/png" href="{ICON_DATA_URI}">' if ICON_DATA_URI else ""
+BRAND_HTML = (
+    f'<div id="brand-strip"><img src="{ICON_DATA_URI}" alt="MeloTTS icon"><strong>MeloTTS</strong></div>'
+    if ICON_DATA_URI
+    else "<div id='brand-strip'><strong>MeloTTS</strong></div>"
+)
 
 
 initial_language = next(iter(models.keys()), LANGUAGES[0] if LANGUAGES else "EN")
@@ -492,9 +526,10 @@ with gr.Blocks(analytics_enabled=False) as voices_tab:
     voices_json = gr.JSON(label="Loaded Voices", value=get_voice_inventory())
     refresh_voices_btn = gr.Button("Refresh", variant="secondary")
 
-with gr.Blocks(title="MeloTTS", analytics_enabled=False) as ui:
+with gr.Blocks(title="MeloTTS", analytics_enabled=False, head=HEAD_HTML) as ui:
     gr.HTML(f"<style>{BADGE_CSS}</style>")
     gr.HTML(f"<div id='build-badge'>Version: {VERSION} | Build: {BUILD_ID}<br>{RUNTIME_LABEL}</div>")
+    gr.HTML(BRAND_HTML)
     with gr.Row():
         with gr.Column():
             text = gr.Textbox(

@@ -78,7 +78,7 @@ tasks:
         ignore_error: true
       - cmd: cmd /c docker rm -f {{.CONTAINER_LOCAL}} >nul 2>&1
         ignore_error: true
-      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_EN}} -v "{{.TASKFILE_DIR}}\melo\app.py:/app/melo/app.py:ro" {{.IMAGE}}
+      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_EN}} -v "{{.TASKFILE_DIR}}\melo\app.py:/app/melo/app.py:ro" -v "{{.TASKFILE_DIR}}\icon.png:/app/icon.png:ro" {{.IMAGE}}
       - cmd /c docker ps --filter "name={{.CONTAINER_LOCAL}}"
 
   localdev:
@@ -108,7 +108,7 @@ tasks:
         ignore_error: true
       - cmd: cmd /c docker rm -f {{.CONTAINER_LOCAL}} >nul 2>&1
         ignore_error: true
-      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_FULL}} -v "{{.TASKFILE_DIR}}\melo\app.py:/app/melo/app.py:ro" {{.IMAGE}}
+      - cmd /c docker run -d --name {{.CONTAINER_LOCAL}} -p {{.PORT}}:8888 --gpus all -e CUDA_VISIBLE_DEVICES={{.GPU_DEVICE}} -e TTS_LANGUAGES={{.LANG_FULL}} -v "{{.TASKFILE_DIR}}\melo\app.py:/app/melo/app.py:ro" -v "{{.TASKFILE_DIR}}\icon.png:/app/icon.png:ro" {{.IMAGE}}
       - cmd /c docker ps --filter "name={{.CONTAINER_LOCAL}}"
 
   imageapi:
