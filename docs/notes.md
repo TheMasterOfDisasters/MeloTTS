@@ -94,10 +94,70 @@ curl -v "http://localhost:8888/tts/speakers?language=EN"
 
 ## Dependency management
 
-    winget install --id=astral-sh.uv -e
-    uv pip compile requirements.in --upgrade --python-version 3.10 --no-header --no-annotate --output-file requirements.txt
+Python dependency files in this repo:
+
+- `requirements.in` is the short human-edited list. It says what this project directly needs.
+- `requirements.txt` is the full resolved/pinned list. Docker installs this file so builds are repeatable.
+- `uv` is the resolver. It reads `requirements.in`, figures out all transitive dependencies, and writes `requirements.txt`.
+
+Go comparison:
+
+- `requirements.in` is a little like the dependencies you intentionally care about.
+- `requirements.txt` is closer to a lock file: exact versions that are known to work.
+- `uv pip compile` is the command that refreshes the lock-like file.
+
+Install `uv` on Windows:
+
+```bash
+winget install --id=astral-sh.uv -e
+```
+
+Refresh Python dependencies:
+
+```bash
+uv pip compile requirements.in --upgrade --python-version 3.10 --no-header --no-annotate --output-file requirements.txt
+```
+
+After this command, inspect `requirements.txt`. It may change many indirect packages even if `requirements.in` is small.
+
+Add a new direct dependency:
+
+1. Add the package name to `requirements.in`.
+2. Run the resolver command above.
+3. Build and test Docker.
+
+Remove a dependency:
+
+1. Remove it from `requirements.in`.
+2. Run the resolver command above.
+3. Check whether it disappeared from `requirements.txt`.
+4. Build and test Docker.
 
 Docker remains the expected validation environment for dependency upgrades:
 
-    task imagesmall
-    task localapi
+```bash
+task imagesmall
+task localapi
+```
+
+Check dependency consistency inside the running container:
+
+```bash
+docker exec melotts_local python -m pip check
+```
+
+Print key runtime versions:
+
+```bash
+docker exec melotts_local python -c "import gradio, fastapi, starlette, pydantic, torch, torchaudio, transformers, numpy, soundfile; print('gradio', gradio.__version__); print('fastapi', fastapi.__version__); print('starlette', starlette.__version__); print('pydantic', pydantic.__version__); print('torch', torch.__version__); print('torchaudio', torchaudio.__version__); print('transformers', transformers.__version__); print('numpy', numpy.__version__); print('soundfile', soundfile.__version__)"
+```
+
+## Release
+
+Root `VERSION` is the release source of truth. A standard patch release can be prepared from a clean working tree with:
+
+    task release
+
+The task requires `VERSION` to be a snapshot such as `v0.0.8-SNAPSHOT`. It commits `VERSION=v0.0.8`, creates tag `v0.0.8`, then commits the next patch snapshot such as `v0.0.9-SNAPSHOT`. Override the release or next version only when needed:
+
+    task release RELEASE_VERSION=v0.0.8 NEXT_VERSION=v0.1.0-SNAPSHOT

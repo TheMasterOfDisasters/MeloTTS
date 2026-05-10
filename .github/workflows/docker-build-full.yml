@@ -49,7 +49,7 @@ jobs:
           IMAGE="${{ secrets.DOCKER_USERNAME }}/melotts"
           TAGS="${IMAGE}:latest"
           if [[ -n "${{ steps.get_version.outputs.version }}" ]]; then
-            TAGS+=$'\n'"${IMAGE}:${{ steps.get_version.outputs.version }}_full"
+            TAGS+=$'\n'"${IMAGE}:${{ steps.get_version.outputs.version }}"
           fi
           {
             echo "tags<<EOF"

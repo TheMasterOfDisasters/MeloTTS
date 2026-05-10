@@ -81,7 +81,7 @@ The web UI defaults to MP3 downloads because it is a more practical size for int
 - Preloaded models for instant offline use (optional)
 - GPU acceleration when available
 - HTTP API + web UI in one container
-- Split image strategy in progress: `*_en` and `*_full` tags
+- Split image strategy: full multilingual images use the plain version tag; EN-focused images use `*_en`
 
 ---
 
@@ -95,7 +95,7 @@ This is useful if you want to:
 
 Current tag pattern:
 - EN-focused image: `latest_en`, `<version>_en`
-- Full multilingual image: `latest`, `<version>_full`
+- Full multilingual image: `latest`, `<version>`
 
 ---
 
@@ -115,6 +115,7 @@ Current tag pattern:
 - Added an output format selector to the Gradio UI; the UI defaults to MP3 while the API remains WAV-by-default for old clients.
 - Modernized the runtime dependency stack using `requirements.in` + resolved pins in `requirements.txt`; key validated versions include `gradio==6.14.0`, `fastapi==0.136.1`, `starlette==1.0.0`, `pydantic==2.13.4`, `torch==2.11.0`, `torchaudio==2.11.0`, `transformers==5.8.0`, `numpy==2.2.6`, and `soundfile==0.13.1`.
 - Normalized package metadata versioning in `setup.py` so display versions like `v0.0.8-SNAPSHOT` install as valid Python package versions such as `0.0.8.dev0`.
+- Added `task release` backed by the root snapshot `VERSION` file, and corrected Docker release tags so the full image publishes as `<version>` while the EN-focused image publishes as `<version>_en`.
 - Expanded rapid local iteration tasks so `task localrun`, `task localdev`, and `task localapi` bind-mount `melo/app.py`.
 - Added `todo/FEATURE_IDEAS.md` with practical UI/API/runtime improvements that fit the current codebase.
 - Documentation: corrected API examples to use `/tts/convert/tts` JSON payloads and documented the current runtime-only scope.
@@ -133,11 +134,11 @@ Current tag pattern:
   - Build-time preload profiles (`EN_ONLY` / `FULL`) with retry + strict/non-strict controls.
   - NLTK resources required for EN synthesis (including `averaged_perceptron_tagger_eng` and `cmudict`) are preloaded during image build for offline-ready runs.
 - Fixed Gradio 4.x UI regressions after upgrades (language/speaker loading + synth output compatibility) while keeping API behavior stable.
-- Split Docker release flow into EN and FULL image tracks/workflows (`<version>_en`, `<version>_full`) to improve build/release flexibility.
+- Split Docker release flow into EN and FULL image tracks/workflows (`<version>_en`, `<version>`) to improve build/release flexibility.
 - Run with:
   ```bash
   docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.7_en
-  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.7_full
+  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.7
   docker run -p 8888:8888 --gpus "device=1" sensejworld/melotts:v0.0.7_en
   ```
 

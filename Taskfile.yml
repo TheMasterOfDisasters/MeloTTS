@@ -12,6 +12,8 @@ vars:
   LANG_FULL: EN,EN_V2,EN_NEWEST,ES,FR,ZH,JP,KR
   TEMP_WAV: '%TEMP%\\melotts_task.wav'
   WAIT_URL: http://localhost:{{.PORT}}/tts/ping
+  RELEASE_VERSION: ''
+  NEXT_VERSION: ''
 
 tasks:
   gpuinfo:
@@ -119,6 +121,11 @@ tasks:
       - 'cmd /c if not exist {{.TEMP_WAV}} exit /b 1'
       - 'cmd /c python -c "import winsound; winsound.PlaySound(r''{{.TEMP_WAV}}'', winsound.SND_FILENAME)"'
       - 'cmd /c del /f /q {{.TEMP_WAV}}'
+
+  release:
+    desc: Release current VERSION snapshot, tag it, then bump to next snapshot
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File "{{.TASKFILE_DIR}}\scripts\release.ps1" -Version "{{.RELEASE_VERSION}}" -NextVersion "{{.NEXT_VERSION}}"
 
   nuke:
     desc: Remove local MeloTTS containers and image
