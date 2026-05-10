@@ -5,6 +5,7 @@ import json
 import logging
 import os
 import random
+import tempfile
 from pathlib import Path
 
 os.environ.setdefault("GRADIO_ANALYTICS_ENABLED", "False")
@@ -15,7 +16,7 @@ import torch
 from fastapi import Body, Depends, FastAPI, HTTPException, Query
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from melo.api import TTS
 from melo.split_utils import split_sentence
@@ -272,8 +273,51 @@ PARAMETER_PRESETS = {
     "Calm": {"speed": 0.85, "sdp_ratio": 0.15, "noise_scale": 0.4, "noise_scale_w": 0.65},
 }
 
+OUTPUT_FORMATS = {
+    "wav": {
+        "sf_format": "WAV",
+        "subtype": None,
+        "media_type": "audio/wav",
+        "extension": "wav",
+        "label": "WAV",
+    },
+    "mp3": {
+        "sf_format": "MP3",
+        "subtype": "MPEG_LAYER_III",
+        "media_type": "audio/mpeg",
+        "extension": "mp3",
+        "label": "MP3",
+    },
+    "flac": {
+        "sf_format": "FLAC",
+        "subtype": "PCM_16",
+        "media_type": "audio/flac",
+        "extension": "flac",
+        "label": "FLAC",
+    },
+    "ogg": {
+        "sf_format": "OGG",
+        "subtype": "VORBIS",
+        "media_type": "audio/ogg",
+        "extension": "ogg",
+        "label": "Ogg Vorbis",
+    },
+}
+
+FORMAT_ALIASES = {
+    ".wav": "wav",
+    "wave": "wav",
+    ".mp3": "mp3",
+    "mpeg": "mp3",
+    ".flac": "flac",
+    ".ogg": "ogg",
+    "oga": "ogg",
+    "vorbis": "ogg",
+}
 
 class TextModel(BaseModel):
+    model_config = ConfigDict(populate_by_name=True)
+
     text: str = Field(..., description="Text to synthesize.")
     speed: float = Field(1.0, ge=0.5, le=2.0, description="Speech speed multiplier.")
     language: str = Field("EN", description="Loaded language/model code.")
@@ -281,6 +325,11 @@ class TextModel(BaseModel):
     sdp_ratio: float = Field(0.2, ge=0.0, le=1.0, description="Stochastic duration predictor ratio.")
     noise_scale: float = Field(0.6, ge=0.0, le=1.5, description="Acoustic sampling noise.")
     noise_scale_w: float = Field(0.8, ge=0.0, le=1.5, description="Duration sampling noise.")
+    output_format: str = Field(
+        "wav",
+        alias="format",
+        description="Response audio format. Defaults to wav for backward compatibility. Supported: wav, mp3, flac, ogg.",
+    )
 
 
 class MetricsModel(BaseModel):
@@ -318,6 +367,26 @@ def get_voice_inventory():
     ]
 
 
+def get_supported_output_formats():
+    available_formats = sf.available_formats()
+    supported = {}
+    for name, config in OUTPUT_FORMATS.items():
+        if config["sf_format"] not in available_formats:
+            continue
+        subtype = config["subtype"]
+        if subtype and subtype not in sf.available_subtypes(config["sf_format"]):
+            continue
+        supported[name] = {
+            "label": config["label"],
+            "extension": config["extension"],
+            "media_type": config["media_type"],
+        }
+    return supported
+
+
+UI_DEFAULT_OUTPUT_FORMAT = "mp3" if "mp3" in get_supported_output_formats() else "wav"
+
+
 def get_status_payload():
     return {
         "msg": "pong",
@@ -329,6 +398,7 @@ def get_status_payload():
         "configured_languages": LANGUAGES,
         "loaded_languages": list(models.keys()),
         "presets": PARAMETER_PRESETS,
+        "output_formats": get_supported_output_formats(),
     }
 
 
@@ -363,7 +433,62 @@ def synthesize_to_wav_bytes(body, model):
     return bio
 
 
-def make_request_body(text, language, speaker, speed, sdp_ratio, noise_scale, noise_scale_w):
+def normalize_output_format(output_format):
+    normalized = (output_format or "wav").strip().lower()
+    normalized = FORMAT_ALIASES.get(normalized, normalized)
+    if normalized not in OUTPUT_FORMATS:
+        supported = ", ".join(get_supported_output_formats().keys())
+        raise HTTPException(
+            status_code=400,
+            detail=f"Unsupported output format '{output_format}'. Supported formats: {supported}",
+        )
+    if normalized not in get_supported_output_formats():
+        raise HTTPException(
+            status_code=500,
+            detail=f"Output format '{normalized}' is configured but not available in this runtime",
+        )
+    return normalized
+
+
+def encode_audio_bytes(audio, sample_rate, output_format):
+    config = OUTPUT_FORMATS[output_format]
+    encoded = io.BytesIO()
+    sf.write(
+        encoded,
+        audio,
+        sample_rate,
+        format=config["sf_format"],
+        subtype=config["subtype"],
+    )
+    encoded.seek(0)
+    return encoded
+
+
+def write_ui_audio_file(wav_bio, audio, sample_rate, output_format):
+    output_format = normalize_output_format(output_format)
+    suffix = f".{OUTPUT_FORMATS[output_format]['extension']}"
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix, prefix="melotts_ui_") as temp_file:
+        output_path = Path(temp_file.name)
+
+    if output_format == "wav":
+        wav_bio.seek(0)
+        output_path.write_bytes(wav_bio.read())
+    else:
+        encoded = encode_audio_bytes(audio, sample_rate, output_format)
+        output_path.write_bytes(encoded.getvalue())
+    return str(output_path)
+
+
+def make_request_body(
+    text,
+    language,
+    speaker,
+    speed,
+    sdp_ratio,
+    noise_scale,
+    noise_scale_w,
+    output_format="wav",
+):
     return TextModel(
         text=text or "",
         language=language,
@@ -372,29 +497,43 @@ def make_request_body(text, language, speaker, speed, sdp_ratio, noise_scale, no
         sdp_ratio=sdp_ratio,
         noise_scale=noise_scale,
         noise_scale_w=noise_scale_w,
+        output_format=output_format,
     )
 
 
-def synthesize_for_ui(text, language, speaker, speed, sdp_ratio, noise_scale, noise_scale_w):
-    body = make_request_body(text, language, speaker, speed, sdp_ratio, noise_scale, noise_scale_w)
+def synthesize_for_ui(text, language, speaker, output_format, speed, sdp_ratio, noise_scale, noise_scale_w):
+    body = make_request_body(
+        text,
+        language,
+        speaker,
+        speed,
+        sdp_ratio,
+        noise_scale,
+        noise_scale_w,
+        output_format=output_format,
+    )
     model = models.get(body.language)
     if not model:
         raise gr.Error(f"Language '{body.language}' is not loaded")
     try:
+        normalized_format = normalize_output_format(body.output_format)
         bio = synthesize_to_wav_bytes(body, model)
         waveform, sample_rate = sf.read(bio, dtype="float32")
+        output_path = write_ui_audio_file(bio, waveform, sample_rate, normalized_format)
         metrics_payload = get_text_metrics(body.text, body.language)
         duration = len(waveform) / sample_rate if sample_rate else 0
+        output_label = OUTPUT_FORMATS[normalized_format]["label"]
         status_text = (
-            f"Generated {duration:.2f}s audio | "
+            f"Generated {duration:.2f}s {output_label} audio | "
             f"{metrics_payload['characters']} chars | "
             f"{metrics_payload['words']} words | "
             f"{metrics_payload['segments']} segments"
         )
         logger.info(
-            f"UI synthesis complete for language={body.language}, speaker={body.speaker_id}, duration={duration:.2f}s"
+            f"UI synthesis complete for language={body.language}, speaker={body.speaker_id}, "
+            f"duration={duration:.2f}s, format={normalized_format}"
         )
-        return (sample_rate, waveform), status_text
+        return output_path, status_text
     except HTTPException as error:
         raise gr.Error(str(error.detail)) from error
     except Exception as error:
@@ -509,6 +648,7 @@ BRAND_HTML = (
 initial_language = next(iter(models.keys()), LANGUAGES[0] if LANGUAGES else "EN")
 initial_speakers = get_speakers_for_language(initial_language)
 initial_speaker = initial_speakers[0] if initial_speakers else None
+output_format_choices = list(get_supported_output_formats().keys())
 
 with gr.Blocks(analytics_enabled=False) as generate_tab:
     out_audio = gr.Audio(label="Output Audio", interactive=False, streaming=False, autoplay=True)
@@ -568,6 +708,14 @@ with gr.Blocks(title="MeloTTS", analytics_enabled=False, head=HEAD_HTML) as ui:
                 filterable=False,
                 allow_custom_value=False,
             )
+            output_format = gr.Dropdown(
+                choices=output_format_choices,
+                value=UI_DEFAULT_OUTPUT_FORMAT,
+                label="Output Format",
+                info="UI download format. API default is still WAV when omitted.",
+                filterable=False,
+                allow_custom_value=False,
+            )
             speed = gr.Slider(minimum=0.5, maximum=2, value=1, step=0.05, label="Speed")
             with gr.Accordion("Advanced Synthesis", open=False):
                 sdp_ratio = gr.Slider(minimum=0, maximum=1, value=0.2, step=0.01, label="SDP Ratio")
@@ -596,7 +744,7 @@ with gr.Blocks(title="MeloTTS", analytics_enabled=False, head=HEAD_HTML) as ui:
     purge_btn.click(release_unused_models_for_ui, inputs=[language], outputs=[language, speaker])
     generate_btn.click(
         synthesize_for_ui,
-        inputs=[text, language, speaker, speed, sdp_ratio, noise_scale, noise_scale_w],
+        inputs=[text, language, speaker, output_format, speed, sdp_ratio, noise_scale, noise_scale_w],
         outputs=[out_audio, status_box],
     )
     refresh_voices_btn.click(get_voice_inventory, inputs=[], outputs=[voices_json])
@@ -634,7 +782,18 @@ async def status():
 @api.get("/tts/defaults")
 async def defaults():
     logger.info("/tts/defaults request received")
-    return {"texts": DEFAULT_TEXTS, "quotes": QUOTE_BANK, "presets": PARAMETER_PRESETS}
+    return {
+        "texts": DEFAULT_TEXTS,
+        "quotes": QUOTE_BANK,
+        "presets": PARAMETER_PRESETS,
+        "output_formats": {"default": "wav", "available": get_supported_output_formats()},
+    }
+
+
+@api.get("/tts/formats")
+async def formats():
+    logger.info("/tts/formats request received")
+    return {"default": "wav", "formats": get_supported_output_formats(), "aliases": FORMAT_ALIASES}
 
 
 @api.get("/tts/languages")
@@ -674,23 +833,35 @@ async def purge_models(language: str = Body(..., embed=True)):
 async def convert_tts(body: TextModel = Body(...), model: TTS = Depends(get_model)):
     logger.info(f"/tts/convert/tts request: {body}")
     try:
+        output_format = normalize_output_format(body.output_format)
         bio = synthesize_to_wav_bytes(body, model)
         audio, sample_rate = sf.read(bio, dtype="float32")
         duration = len(audio) / sample_rate if sample_rate else 0
-        bio.seek(0)
+        output_bio = bio
+        if output_format == "wav":
+            output_bio.seek(0)
+        else:
+            output_bio = encode_audio_bytes(audio, sample_rate, output_format)
+        format_config = OUTPUT_FORMATS[output_format]
         logger.info(
-            f"Streamed TTS audio for language={body.language}, speaker={body.speaker_id}, duration={duration:.2f}s"
+            f"Streamed TTS audio for language={body.language}, speaker={body.speaker_id}, "
+            f"duration={duration:.2f}s, format={output_format}"
         )
+        headers = {
+            "Content-Disposition": (
+                f"attachment; filename=tts_{body.language}.{format_config['extension']}"
+            ),
+            "X-MeloTTS-Language": body.language,
+            "X-MeloTTS-Speaker": body.speaker_id,
+            "X-MeloTTS-Sample-Rate": str(sample_rate),
+            "X-MeloTTS-Duration": f"{duration:.3f}",
+        }
+        if output_format != "wav":
+            headers["X-MeloTTS-Format"] = output_format
         return StreamingResponse(
-            bio,
-            media_type="audio/wav",
-            headers={
-                "Content-Disposition": f"attachment; filename=tts_{body.language}.wav",
-                "X-MeloTTS-Language": body.language,
-                "X-MeloTTS-Speaker": body.speaker_id,
-                "X-MeloTTS-Sample-Rate": str(sample_rate),
-                "X-MeloTTS-Duration": f"{duration:.3f}",
-            },
+            output_bio,
+            media_type=format_config["media_type"],
+            headers=headers,
         )
     except HTTPException:
         raise

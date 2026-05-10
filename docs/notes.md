@@ -59,6 +59,21 @@ curl -v -X POST http://localhost:8888/tts/convert/tts ^
   --output hello.wav
 ```
 
+### Check API - compact output
+```bash
+curl -v -X POST http://localhost:8888/tts/convert/tts ^
+  -H "Content-Type: application/json" ^
+  -d "{\"text\":\"Hello world. I wanted to test MP3 output\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"format\":\"mp3\"}" ^
+  --output hello.mp3
+```
+
+Available response formats:
+```bash
+curl -v http://localhost:8888/tts/formats
+```
+
+The UI has an Output Format dropdown and defaults to MP3. The API remains WAV-by-default when `format` is omitted.
+
 ### Check API - languages
 ```bash
 curl -v http://localhost:8888/tts/languages

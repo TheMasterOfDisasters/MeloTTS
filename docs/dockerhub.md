@@ -48,6 +48,18 @@ curl -X POST "http://localhost:8888/tts/convert/tts" ^
   -o hello.wav
 ```
 
+Omitting `format` keeps the original WAV response. Add `format` when a smaller file is preferred:
+
+```bash
+curl -X POST "http://localhost:8888/tts/convert/tts" ^
+  -H "Content-Type: application/json" ^
+  -d "{\"text\":\"Hello world. I wanted to test this and see if this works properly\",\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"format\":\"mp3\"}" ^
+  -o hello.mp3
+```
+
+Supported response formats are listed by `GET /tts/formats`.
+The web UI defaults to MP3 downloads. The API keeps WAV as the default unless `format` is provided.
+
 **Advanced:**
 ```bash
 curl -v -X POST http://localhost:8888/tts/convert/tts ^
@@ -92,6 +104,8 @@ Main tag strategy:
 - Reworked the UI into a Kokoro-style Gradio layout while keeping MeloTTS language, speaker, preset, and advanced synthesis controls.
 - Added text metrics, per-language random quotes, voice inventory, synthesis presets, advanced controls, Gradio audio waveform preview, runtime metadata, favicon/brand icon, and richer API documentation links.
 - Added `/tts/status`, `/tts/defaults`, `/tts/voices`, `/tts/metrics`, and `/tts/purge` endpoints for the new UI and companion integrations.
+- Added backward-compatible optional API output formats: default WAV plus MP3, FLAC, and Ogg Vorbis via `format`, with discovery at `/tts/formats`.
+- Added an output format selector to the Gradio UI; the UI defaults to MP3 while the API remains WAV-by-default for old clients.
 - Expanded rapid local iteration tasks so `task localrun`, `task localdev`, and `task localapi` bind-mount `melo/app.py`.
 - Added `todo/FEATURE_IDEAS.md` with practical UI/API/runtime improvements that fit the current codebase.
 - Documentation: corrected API examples to use `/tts/convert/tts` JSON payloads and documented the current runtime-only scope.
