@@ -90,7 +90,7 @@ tasks:
   imageapi:
     desc: Call TTS API, play generated temp WAV, then remove it
     cmds:
-      - 'cmd /c curl.exe -sS --retry 30 --retry-delay 2 --retry-connrefused http://localhost:{{.PORT}}/tts/ping >nul'
+      - 'cmd /c curl.exe -sS --retry 30 --retry-delay 2 --retry-connrefused --retry-all-errors http://localhost:{{.PORT}}/tts/ping >nul'
       - 'cmd /c curl.exe -sS -X POST http://localhost:{{.PORT}}/tts/convert/tts -H "Content-Type: application/json" -d "{\"text\":\"Hello world. I wanted to test this and see if this works properly\",\"speed\":1.0,\"language\":\"EN\",\"speaker_id\":\"EN-BR\",\"sdp_ratio\":0.21,\"noise_scale\":0.61,\"noise_scale_w\":0.81}" --output {{.TEMP_WAV}}'
       - 'cmd /c if not exist {{.TEMP_WAV}} exit /b 1'
       - 'cmd /c python -c "import winsound; winsound.PlaySound(r''{{.TEMP_WAV}}'', winsound.SND_FILENAME)"'

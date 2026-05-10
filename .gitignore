@@ -17,7 +17,3 @@ build/
 # IntelliJ IDEA project folder
 .idea/
 .idea/*
-
-# local todos
-todo/
-todo/*

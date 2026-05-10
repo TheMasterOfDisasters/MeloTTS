@@ -25,12 +25,6 @@ DOWNLOAD_CONFIG_URLS = {
     'KR': 'https://myshell-public-repo-host.s3.amazonaws.com/openvoice/basespeakers/KR/config.json',
 }
 
-PRETRAINED_MODELS = {
-    'G.pth': 'https://myshell-public-repo-host.s3.amazonaws.com/openvoice/basespeakers/pretrained/G.pth',
-    'D.pth': 'https://myshell-public-repo-host.s3.amazonaws.com/openvoice/basespeakers/pretrained/D.pth',
-    'DUR.pth': 'https://myshell-public-repo-host.s3.amazonaws.com/openvoice/basespeakers/pretrained/DUR.pth',
-}
-
 LANG_TO_HF_REPO_ID = {
     'EN': 'myshell-ai/MeloTTS-English',
     'EN_V2': 'myshell-ai/MeloTTS-English-v2',
@@ -100,6 +94,3 @@ def load_or_download_model(locale, device, use_hf=True, ckpt_path=None):
                 ckpt_path = cached_path(DOWNLOAD_CKPT_URLS[language])
 
     return torch.load(ckpt_path, map_location=device)
-
-def load_pretrain_model():
-    return [cached_path(url) for url in PRETRAINED_MODELS.values()]
