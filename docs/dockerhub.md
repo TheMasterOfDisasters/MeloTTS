@@ -1,5 +1,13 @@
 # 🗣️ MeloTTS WebUI & API (Docker)
 
+> [!IMPORTANT]
+> MeloTTS has moved to **Hangry Labs**:
+> [MeloTTS on GitHub](https://github.com/hangry-labs/MeloTTS)
+>
+> Please use the Hangry Labs repository for issues, discussions, pull requests, release notes, and current documentation.
+> Docker images continue under the official [hangrylabs/melotts Docker Hub repository](https://hub.docker.com/r/hangrylabs/melotts).
+> Older fork URLs and Docker image namespaces are kept only as public redirects or archives for existing users.
+
 This is an [independently maintained fork](https://github.com/hangry-labs/MeloTTS) of the original [MeloTTS](https://github.com/myshell-ai/MeloTTS), focusing on making it **easy to run, integrate, and test** without deep technical setup.
 
 ## ✅ Features
@@ -13,27 +21,27 @@ This is an [independently maintained fork](https://github.com/hangry-labs/MeloTT
 ## 🚀 Quick Start
 **CPU:**
 ```bash
-docker run -p 8888:8888 sensejworld/melotts
+docker run -p 8888:8888 hangrylabs/melotts
 ```
 
 **NVIDIA GPU:**
 ```bash
-docker run -p 8888:8888 --gpus all sensejworld/melotts:latest
+docker run -p 8888:8888 --gpus all hangrylabs/melotts:latest
 ```
 
 **EN-focused image (smaller target image):**
 ```bash
-docker run -p 8888:8888 --gpus all sensejworld/melotts:latest_en
+docker run -p 8888:8888 --gpus all hangrylabs/melotts:latest_en
 ```
 
 **Specific GPU (example: GPU index `1`):**
 ```bash
-docker run -p 8888:8888 --gpus "device=1" sensejworld/melotts
+docker run -p 8888:8888 --gpus "device=1" hangrylabs/melotts
 ```
 
 **English only:**
 ```bash
-docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN sensejworld/melotts
+docker run -p 8888:8888 --gpus all -e TTS_LANGUAGES=EN hangrylabs/melotts
 ```
 
 Visit: [http://localhost:8888](http://localhost:8888) for the UI.  
@@ -78,12 +86,16 @@ If you encounter a bug, have a feature request, or want to contribute:
 I respond fastest on GitHub — Docker Hub comments aren’t monitored regularly.
 
 ### 🔗 Common Help Topics
+- **[MeloTTS GitHub Repository](https://github.com/hangry-labs/MeloTTS)**
+- **[Official Docker Hub Repository](https://hub.docker.com/r/hangrylabs/melotts)**
 - **[ReadMe](https://github.com/hangry-labs/MeloTTS/blob/main/README.md)**
 - **[Technical Readme](https://github.com/hangry-labs/MeloTTS/blob/main/docs/notes.md)**
 
 
 ## 📦 Docker Hub Tags
-View all available builds: [sensejworld/melotts — Tags](https://hub.docker.com/r/sensejworld/melotts/tags)
+View all current builds: [hangrylabs/melotts — Tags](https://hub.docker.com/r/hangrylabs/melotts/tags)
+
+Legacy builds may still exist at [sensejworld/melotts — Tags](https://hub.docker.com/r/sensejworld/melotts/tags), but new project continuation should use the Hangry Labs image namespace.
 
 Main tag strategy:
 - EN-focused image: `latest_en`, `<version>_en`

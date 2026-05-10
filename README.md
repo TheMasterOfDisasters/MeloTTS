@@ -2,6 +2,13 @@
 
 # MeloTTS — Maintained & Easy-to-Use Fork 🛠️
 
+> [!IMPORTANT]
+> This repository has moved to **Hangry Labs**:
+> [https://github.com/hangry-labs/MeloTTS](https://github.com/hangry-labs/MeloTTS)
+>
+> This old fork is kept as a public redirect/archive for existing links and users.
+> Please use the Hangry Labs repository for issues, discussions, pull requests, releases, and current documentation.
+
 Easy-to-run text-to-speech Docker images with a browser UI and HTTP API included.
 
 This fork is made for ease of use. The aim is that anyone should be able to run text to speech without friction: a person trying it at home, a developer wiring it into an app, or a professional evaluating it for a production environment. Install Docker, run one command from Quick Start, open the local link, and start generating speech.

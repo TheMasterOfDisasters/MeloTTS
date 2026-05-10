@@ -1,5 +1,12 @@
 # Development Notes
 
+## Repository Location
+This project has moved to Hangry Labs:
+
+    https://github.com/hangry-labs/MeloTTS
+
+Use the Hangry Labs repository for current issues, discussions, pull requests, releases, and documentation updates. Older fork locations should be treated as public redirects or archives only.
+
 ##Tools
 
     winget install --id=astral-sh.uv -e
@@ -158,14 +165,14 @@ Root `VERSION` is the release source of truth. A standard patch release can be p
 
     task release
 
-The task requires `VERSION` to be a snapshot such as `v0.0.8-SNAPSHOT`. It commits `VERSION=v0.0.8`, creates tag `v0.0.8`, then commits the next patch snapshot such as `v0.0.9-SNAPSHOT`. Override the release or next version only when needed:
+The task requires `VERSION` to be a snapshot such as `v0.0.9-SNAPSHOT`. It commits `VERSION=v0.0.9`, creates tag `v0.0.9`, then commits the next patch snapshot such as `v0.0.10-SNAPSHOT`. Override the release or next version only when needed:
 
-    task release RELEASE_VERSION=v0.0.8 NEXT_VERSION=v0.1.0-SNAPSHOT
+    task release RELEASE_VERSION=v0.0.9 NEXT_VERSION=v0.1.0-SNAPSHOT
 
 The release task allows untracked local `todo/` files so private notes can stay visible locally. It fails if anything in `todo/` is staged or tracked, because `todo/` is not meant to be released.
 
 Publish the prepared release with:
 
-    task releasepush RELEASE_VERSION=v0.0.8
+    task releasepush RELEASE_VERSION=v0.0.9
 
 This pushes the release tag first so GitHub Actions runs the tag build, then pushes `main` with the next `-SNAPSHOT` version.
