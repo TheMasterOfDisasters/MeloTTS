@@ -5,12 +5,14 @@ import logging
 import os
 from pathlib import Path
 
+os.environ.setdefault("GRADIO_ANALYTICS_ENABLED", "False")
+
+import gradio as gr
 import soundfile as sf
 import torch
 from fastapi import Body, Depends, FastAPI, HTTPException, Query
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from melo.api import TTS
@@ -18,7 +20,6 @@ from melo.split_utils import split_sentence
 
 
 APP_ROOT = Path(__file__).resolve().parent.parent
-WEB_ROOT = Path(__file__).resolve().parent / "web"
 
 
 def _read_non_empty_env(name: str):
@@ -30,9 +31,7 @@ def _read_non_empty_env(name: str):
 
 
 def _load_build_metadata():
-    metadata_path = _read_non_empty_env("BUILD_METADATA_PATH") or str(
-        APP_ROOT / ".build_meta.json"
-    )
+    metadata_path = _read_non_empty_env("BUILD_METADATA_PATH") or str(APP_ROOT / ".build_meta.json")
     try:
         with open(metadata_path, "r", encoding="utf-8") as metadata_file:
             data = json.load(metadata_file)
@@ -109,20 +108,25 @@ def validate_nltk_resources(required_languages):
         )
 
 
+def get_cuda_devices():
+    if not torch.cuda.is_available():
+        return []
+    return [torch.cuda.get_device_name(idx) for idx in range(torch.cuda.device_count())]
+
+
 def get_runtime_label():
+    cuda_devices = get_cuda_devices()
+    if cuda_devices:
+        visible = os.getenv("CUDA_VISIBLE_DEVICES", "all")
+        device_list = ", ".join(f"{idx}:{name}" for idx, name in enumerate(cuda_devices))
+        return f"GPU x{len(cuda_devices)} (visible={visible}) [{device_list}]"
     try:
-        if torch.cuda.is_available():
-            gpu_name = torch.cuda.get_device_name(0)
-            major, minor = torch.cuda.get_device_capability(0)
-            sm_code = major * 10 + minor
-            visible = os.getenv("CUDA_VISIBLE_DEVICES", "all")
-            return f"GPU: {gpu_name} (sm_{sm_code}, visible={visible})"
         mps_backend = getattr(torch.backends, "mps", None)
         if mps_backend is not None and getattr(mps_backend, "is_available", lambda: False)():
-            return "Device: Apple MPS"
+            return "Apple MPS"
     except Exception as error:
         logger.warning(f"Could not determine runtime device label: {error}")
-    return "Device: CPU"
+    return "CPU"
 
 
 DEVICE = os.getenv("TTS_DEVICE", "auto")
@@ -165,6 +169,21 @@ PARAMETER_PRESETS = {
     "Fast preview": {"speed": 1.2, "sdp_ratio": 0.2, "noise_scale": 0.55, "noise_scale_w": 0.75},
     "Calm": {"speed": 0.85, "sdp_ratio": 0.15, "noise_scale": 0.4, "noise_scale_w": 0.65},
 }
+
+
+class TextModel(BaseModel):
+    text: str = Field(..., description="Text to synthesize.")
+    speed: float = Field(1.0, ge=0.5, le=2.0, description="Speech speed multiplier.")
+    language: str = Field("EN", description="Loaded language/model code.")
+    speaker_id: str = Field(..., description="Speaker ID from /tts/speakers.")
+    sdp_ratio: float = Field(0.2, ge=0.0, le=1.0, description="Stochastic duration predictor ratio.")
+    noise_scale: float = Field(0.6, ge=0.0, le=1.5, description="Acoustic sampling noise.")
+    noise_scale_w: float = Field(0.8, ge=0.0, le=1.5, description="Duration sampling noise.")
+
+
+class MetricsModel(BaseModel):
+    text: str = Field("", description="Text to inspect.")
+    language: str = Field("EN", description="Language/model code used for sentence splitting.")
 
 
 def get_speakers_for_language(language):
@@ -211,6 +230,14 @@ def get_status_payload():
     }
 
 
+def get_model(body: TextModel) -> TTS:
+    model = models.get(body.language)
+    if not model:
+        logger.error(f"Requested model not available: {body.language}")
+        raise HTTPException(status_code=404, detail=f"Language '{body.language}' is not loaded")
+    return model
+
+
 def synthesize_to_wav_bytes(body, model):
     if not body.text.strip():
         raise HTTPException(status_code=400, detail="Text must not be empty")
@@ -234,112 +261,74 @@ def synthesize_to_wav_bytes(body, model):
     return bio
 
 
-app = FastAPI(
-    title="MeloTTS",
-    description="MeloTTS static web UI and mounted TTS API",
-    version=VERSION,
-    docs_url=None,
-    redoc_url=None,
-    openapi_url=None,
-)
-
-tts_app = FastAPI(
-    title="TTS Service API",
-    description="API documentation for the MeloTTS service",
-    version=VERSION,
-    openapi_url="/tts/openapi.json",
-    docs_url="/tts/docs",
-    redoc_url="/tts/redoc",
-)
+def make_request_body(text, language, speaker, speed, sdp_ratio, noise_scale, noise_scale_w):
+    return TextModel(
+        text=text or "",
+        language=language,
+        speaker_id=speaker,
+        speed=speed,
+        sdp_ratio=sdp_ratio,
+        noise_scale=noise_scale,
+        noise_scale_w=noise_scale_w,
+    )
 
 
-@tts_app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request, exc):
-    logger.error(f"Validation error for path {request.url.path}: {exc}")
-    return JSONResponse(status_code=422, content={"detail": exc.errors()})
-
-
-class TextModel(BaseModel):
-    text: str = Field(..., description="Text to synthesize.")
-    speed: float = Field(1.0, ge=0.5, le=2.0, description="Speech speed multiplier.")
-    language: str = Field("EN", description="Loaded language/model code.")
-    speaker_id: str = Field(..., description="Speaker ID from /tts/speakers.")
-    sdp_ratio: float = Field(0.2, ge=0.0, le=1.0, description="Stochastic duration predictor ratio.")
-    noise_scale: float = Field(0.6, ge=0.0, le=1.5, description="Acoustic sampling noise.")
-    noise_scale_w: float = Field(0.8, ge=0.0, le=1.5, description="Duration sampling noise.")
-
-
-class MetricsModel(BaseModel):
-    text: str = Field("", description="Text to inspect.")
-    language: str = Field("EN", description="Language/model code used for sentence splitting.")
-
-
-def get_model(body: TextModel) -> TTS:
+def synthesize_for_ui(text, language, speaker, speed, sdp_ratio, noise_scale, noise_scale_w):
+    body = make_request_body(text, language, speaker, speed, sdp_ratio, noise_scale, noise_scale_w)
     model = models.get(body.language)
     if not model:
-        logger.error(f"Requested model not available: {body.language}")
-        raise HTTPException(status_code=404, detail=f"Language '{body.language}' is not loaded")
-    return model
+        raise gr.Error(f"Language '{body.language}' is not loaded")
+    try:
+        bio = synthesize_to_wav_bytes(body, model)
+        waveform, sample_rate = sf.read(bio, dtype="float32")
+        metrics_payload = get_text_metrics(body.text, body.language)
+        duration = len(waveform) / sample_rate if sample_rate else 0
+        status_text = (
+            f"Generated {duration:.2f}s audio | "
+            f"{metrics_payload['characters']} chars | "
+            f"{metrics_payload['words']} words | "
+            f"{metrics_payload['segments']} segments"
+        )
+        logger.info(
+            f"UI synthesis complete for language={body.language}, speaker={body.speaker_id}, duration={duration:.2f}s"
+        )
+        return (sample_rate, waveform), status_text
+    except HTTPException as error:
+        raise gr.Error(str(error.detail)) from error
+    except Exception as error:
+        logger.exception(f"UI synthesis failed: {error}")
+        raise gr.Error(str(error)) from error
 
 
-@app.get("/", include_in_schema=False)
-async def index():
-    return FileResponse(WEB_ROOT / "index.html")
+def update_language(language, current_text):
+    speakers = get_speakers_for_language(language)
+    default_text = DEFAULT_TEXTS.get(language, current_text or "")
+    return gr.update(choices=speakers, value=speakers[0] if speakers else None), default_text
 
 
-@tts_app.get("/ping")
-async def ping():
-    logger.info("/tts/ping request received")
-    return {
-        "msg": "pong",
-        "type": "MeloTTS",
-        "version": VERSION,
-        "build_id": BUILD_ID,
-    }
+def apply_preset(preset_name):
+    preset = PARAMETER_PRESETS.get(preset_name, PARAMETER_PRESETS["Balanced"])
+    return preset["speed"], preset["sdp_ratio"], preset["noise_scale"], preset["noise_scale_w"]
 
 
-@tts_app.get("/status")
-async def status():
-    logger.info("/tts/status request received")
-    return get_status_payload()
+def normalize_text(text):
+    return " ".join((text or "").split())
 
 
-@tts_app.get("/defaults")
-async def defaults():
-    logger.info("/tts/defaults request received")
-    return {"texts": DEFAULT_TEXTS, "presets": PARAMETER_PRESETS}
+def load_sample(language):
+    return DEFAULT_TEXTS.get(language, DEFAULT_TEXTS["EN"])
 
 
-@tts_app.get("/languages")
-async def list_languages():
-    logger.info("/tts/languages request received")
-    return {"languages": LANGUAGES, "loaded_languages": list(models.keys())}
+def metrics_for_ui(text, language):
+    metrics_payload = get_text_metrics(text, language)
+    return (
+        f"{metrics_payload['characters']} characters | "
+        f"{metrics_payload['words']} words | "
+        f"{metrics_payload['segments']} segments"
+    )
 
 
-@tts_app.get("/speakers")
-async def list_speakers(language: str = Query(..., description="Loaded language code")):
-    logger.info(f"/tts/speakers request received for language={language}")
-    model = models.get(language)
-    if not model:
-        logger.warning(f"Requested speakers for unknown language: {language}")
-        raise HTTPException(status_code=404, detail="Language not found")
-    return {"language": language, "speakers": list(model.hps.data.spk2id.keys())}
-
-
-@tts_app.get("/voices")
-async def voices():
-    logger.info("/tts/voices request received")
-    return {"voices": get_voice_inventory()}
-
-
-@tts_app.post("/metrics")
-async def metrics(body: MetricsModel = Body(...)):
-    logger.info(f"/tts/metrics request received for language={body.language}")
-    return {"language": body.language, "metrics": get_text_metrics(body.text, body.language)}
-
-
-@tts_app.post("/purge")
-async def purge_models(language: str = Body(..., embed=True)):
+def purge_models_sync(language):
     global models
     keep_model = models.get(language)
     if not keep_model:
@@ -353,7 +342,199 @@ async def purge_models(language: str = Body(..., embed=True)):
     return {"kept": language, "removed": removed, "loaded_languages": list(models.keys())}
 
 
-@tts_app.post("/convert/tts")
+def release_unused_models_for_ui(language):
+    result = purge_models_sync(language)
+    speakers = get_speakers_for_language(language)
+    gr.Info(f"Released {len(result['removed'])} model(s). Kept loaded: {language}.")
+    return (
+        gr.update(choices=list(models.keys()), value=language),
+        gr.update(choices=speakers, value=speakers[0] if speakers else None),
+    )
+
+
+BADGE_CSS = """
+#build-badge {
+    position: fixed;
+    top: 12px;
+    right: 12px;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.45);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+    font-family: Arial, sans-serif;
+    backdrop-filter: blur(2px);
+}
+"""
+
+
+initial_language = next(iter(models.keys()), LANGUAGES[0] if LANGUAGES else "EN")
+initial_speakers = get_speakers_for_language(initial_language)
+initial_speaker = initial_speakers[0] if initial_speakers else None
+
+with gr.Blocks(analytics_enabled=False) as generate_tab:
+    out_audio = gr.Audio(label="Output Audio", interactive=False, streaming=False, autoplay=True)
+    generate_btn = gr.Button("Generate", variant="primary")
+    with gr.Accordion("Output Details", open=True):
+        status_box = gr.Textbox(
+            value="No audio generated yet.",
+            interactive=False,
+            show_label=False,
+            info="Generation details and text metrics.",
+        )
+        gr.Button("Open API Docs", link="/tts/docs", variant="secondary")
+
+with gr.Blocks(analytics_enabled=False) as voices_tab:
+    voices_json = gr.JSON(label="Loaded Voices", value=get_voice_inventory())
+    refresh_voices_btn = gr.Button("Refresh", variant="secondary")
+
+with gr.Blocks(title="MeloTTS", analytics_enabled=False) as ui:
+    gr.HTML(f"<style>{BADGE_CSS}</style>")
+    gr.HTML(f"<div id='build-badge'>Version: {VERSION} | Build: {BUILD_ID}<br>{RUNTIME_LABEL}</div>")
+    with gr.Row():
+        with gr.Column():
+            text = gr.Textbox(
+                value=DEFAULT_TEXTS.get(initial_language, ""),
+                label="Input Text",
+                info="Arbitrarily many characters supported",
+                lines=5,
+            )
+            metrics_box = gr.Textbox(
+                value=metrics_for_ui(DEFAULT_TEXTS.get(initial_language, ""), initial_language),
+                label="Text Metrics",
+                interactive=False,
+            )
+            with gr.Row():
+                language = gr.Dropdown(
+                    choices=list(models.keys()),
+                    value=initial_language,
+                    label="Language",
+                    info="Loaded MeloTTS model",
+                    filterable=False,
+                    allow_custom_value=False,
+                )
+                speaker = gr.Dropdown(
+                    choices=initial_speakers,
+                    value=initial_speaker,
+                    label="Speaker",
+                    info="Available speakers for selected language",
+                    filterable=False,
+                    allow_custom_value=False,
+                )
+            preset = gr.Dropdown(
+                choices=list(PARAMETER_PRESETS.keys()),
+                value="Balanced",
+                label="Preset",
+                info="Quick synthesis parameter set",
+                filterable=False,
+                allow_custom_value=False,
+            )
+            speed = gr.Slider(minimum=0.5, maximum=2, value=1, step=0.05, label="Speed")
+            with gr.Accordion("Advanced Synthesis", open=False):
+                sdp_ratio = gr.Slider(minimum=0, maximum=1, value=0.2, step=0.01, label="SDP Ratio")
+                noise_scale = gr.Slider(minimum=0, maximum=1.5, value=0.6, step=0.01, label="Noise Scale")
+                noise_scale_w = gr.Slider(
+                    minimum=0,
+                    maximum=1.5,
+                    value=0.8,
+                    step=0.01,
+                    label="Noise Scale W",
+                )
+            sample_btn = gr.Button("Load Sample", variant="secondary")
+            with gr.Row():
+                normalize_btn = gr.Button("Normalize Spacing", variant="secondary")
+                purge_btn = gr.Button("Purge Other Models", variant="secondary")
+        with gr.Column():
+            gr.TabbedInterface([generate_tab, voices_tab], ["Generate", "Voices"])
+
+    language.change(update_language, inputs=[language, text], outputs=[speaker, text])
+    language.change(metrics_for_ui, inputs=[text, language], outputs=[metrics_box])
+    text.change(metrics_for_ui, inputs=[text, language], outputs=[metrics_box])
+    preset.change(apply_preset, inputs=[preset], outputs=[speed, sdp_ratio, noise_scale, noise_scale_w])
+    sample_btn.click(load_sample, inputs=[language], outputs=[text])
+    sample_btn.click(metrics_for_ui, inputs=[text, language], outputs=[metrics_box])
+    normalize_btn.click(normalize_text, inputs=[text], outputs=[text])
+    normalize_btn.click(metrics_for_ui, inputs=[text, language], outputs=[metrics_box])
+    purge_btn.click(release_unused_models_for_ui, inputs=[language], outputs=[language, speaker])
+    generate_btn.click(
+        synthesize_for_ui,
+        inputs=[text, language, speaker, speed, sdp_ratio, noise_scale, noise_scale_w],
+        outputs=[out_audio, status_box],
+    )
+    refresh_voices_btn.click(get_voice_inventory, inputs=[], outputs=[voices_json])
+
+ui.queue(default_concurrency_limit=4, api_open=False)
+
+api = FastAPI(
+    title="TTS Service API",
+    description="API documentation for the MeloTTS service",
+    version=VERSION,
+    openapi_url="/tts/openapi.json",
+    docs_url="/tts/docs",
+    redoc_url="/tts/redoc",
+)
+
+
+@api.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc):
+    logger.error(f"Validation error for path {request.url.path}: {exc}")
+    return JSONResponse(status_code=422, content={"detail": exc.errors()})
+
+
+@api.get("/tts/ping")
+async def ping():
+    logger.info("/tts/ping request received")
+    return {"msg": "pong", "type": "MeloTTS", "version": VERSION, "build_id": BUILD_ID}
+
+
+@api.get("/tts/status")
+async def status():
+    logger.info("/tts/status request received")
+    return get_status_payload()
+
+
+@api.get("/tts/defaults")
+async def defaults():
+    logger.info("/tts/defaults request received")
+    return {"texts": DEFAULT_TEXTS, "presets": PARAMETER_PRESETS}
+
+
+@api.get("/tts/languages")
+async def list_languages():
+    logger.info("/tts/languages request received")
+    return {"languages": LANGUAGES, "loaded_languages": list(models.keys())}
+
+
+@api.get("/tts/speakers")
+async def list_speakers(language: str = Query(..., description="Loaded language code")):
+    logger.info(f"/tts/speakers request received for language={language}")
+    model = models.get(language)
+    if not model:
+        logger.warning(f"Requested speakers for unknown language: {language}")
+        raise HTTPException(status_code=404, detail="Language not found")
+    return {"language": language, "speakers": list(model.hps.data.spk2id.keys())}
+
+
+@api.get("/tts/voices")
+async def voices():
+    logger.info("/tts/voices request received")
+    return {"voices": get_voice_inventory()}
+
+
+@api.post("/tts/metrics")
+async def metrics(body: MetricsModel = Body(...)):
+    logger.info(f"/tts/metrics request received for language={body.language}")
+    return {"language": body.language, "metrics": get_text_metrics(body.text, body.language)}
+
+
+@api.post("/tts/purge")
+async def purge_models(language: str = Body(..., embed=True)):
+    return purge_models_sync(language)
+
+
+@api.post("/tts/convert/tts")
 async def convert_tts(body: TextModel = Body(...), model: TTS = Depends(get_model)):
     logger.info(f"/tts/convert/tts request: {body}")
     try:
@@ -382,9 +563,8 @@ async def convert_tts(body: TextModel = Body(...), model: TTS = Depends(get_mode
         return JSONResponse(status_code=500, content={"error": str(error)})
 
 
-app.mount("/assets", StaticFiles(directory=str(WEB_ROOT)), name="assets")
-app.mount("/tts", tts_app)
-logger.info("Mounted static UI at / and TTS API at /tts")
+app = gr.mount_gradio_app(api, ui, path="/")
+logger.info("Mounted Gradio UI at / with TTS API routes under /tts")
 
 
 def main():

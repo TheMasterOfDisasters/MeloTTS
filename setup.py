@@ -20,7 +20,6 @@ setup(
     install_requires=reqs,
     package_data={
         '': ['*.txt', 'cmudict_*'],
-        'melo': ['web/*.html', 'web/*.css', 'web/*.js'],
     },
     entry_points={
         "console_scripts": [
