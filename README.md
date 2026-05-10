@@ -1,7 +1,4 @@
-<p align="center">
-  <img src="logo.png" alt="MeloTTS logo" width="320">
-</p>
-
+<img src="logo.png" alt="MeloTTS logo"">
 # MeloTTS — Maintained & Easy-to-Use Fork 🛠️
 
 This project is an independently maintained fork of the original [MeloTTS](https://github.com/myshell-ai/MeloTTS) by [Wenliang Zhao](https://github.com/wl-zhao), [Xumin Yu](https://github.com/yuxumin), and [Zengyi Qin](https://github.com/Zengyi-Qin).  
