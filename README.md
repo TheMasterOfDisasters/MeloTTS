@@ -2,31 +2,35 @@
 
 # MeloTTS — Maintained & Easy-to-Use Fork 🛠️
 
-This project is an independently maintained fork of the original [MeloTTS](https://github.com/myshell-ai/MeloTTS) by [Wenliang Zhao](https://github.com/wl-zhao), [Xumin Yu](https://github.com/yuxumin), and [Zengyi Qin](https://github.com/Zengyi-Qin).  
-The original work is licensed under the MIT License, and we thank the authors for their excellent research and contributions.
+Easy-to-run text-to-speech Docker images with a browser UI and HTTP API included.
 
-While the original MeloTTS is an impressive research project, this fork focuses on **making it simple to run and integrate** — with a working Docker image, included UI, and API support.
+This fork is made for ease of use. The aim is that anyone should be able to run text to speech without friction: a person trying it at home, a developer wiring it into an app, or a professional evaluating it for a production environment. Install Docker, run one command from Quick Start, open the local link, and start generating speech.
 
-It’s designed so that you can:
-- Pull the Docker image
-- Run it instantly
-- Start synthesizing speech via UI or API without hunting down dependencies
+You get:
+- A browser UI for manual text-to-speech generation
+- An HTTP API for your own applications and tools
+- No manual Python, model, or audio dependency setup
+- Full multilingual images and smaller EN-focused images
+- Offline-friendly usage: download an image once, keep it, and run it later without relying on live model downloads
 
-⚠️ **Note:**  This project is maintained for usability and convenience by a single developer (with a different primary tech stack).  
-It is **not** a production-hardened system and may require additional work for deployment in critical environments.
-
-✅ **Offline Mode:** Supported — provided that models are baked into the Docker image or mounted via a volume.  
-If running in a fully offline environment, ensure all required model files are available locally before starting the container.
-
-🤝 **Contributions Welcome:** If you find bugs, have ideas, or want to improve things, feel free to submit issues or pull requests. Every bit of help makes this project better for everyone.
+Official Docker images are published here: [sensejworld/melotts on Docker Hub](https://hub.docker.com/r/sensejworld/melotts/tags).
 
 ---
 
-## 🆘 Support & Issues
-If you encounter bugs, have feature requests, or need help using MeloTTS:
-- Please open a new [GitHub Issue](https://github.com/TheMasterOfDisasters/MeloTTS/issues) with as much detail as possible
-- Include error messages, logs, and reproduction steps if applicable
-- For general questions or ideas, you can also use the [Discussions](https://github.com/TheMasterOfDisasters/MeloTTS/discussions) tab
+## 🔊 Voice Examples
+
+Preview MP3 samples from the full multilingual image:
+
+| Language | Sample | File |
+| --- | --- | --- |
+| English | <audio controls src="examples/melotts-en.mp3"></audio> | [MP3](examples/melotts-en.mp3) |
+| English v2 | <audio controls src="examples/melotts-en-v2.mp3"></audio> | [MP3](examples/melotts-en-v2.mp3) |
+| English newest | <audio controls src="examples/melotts-en-newest.mp3"></audio> | [MP3](examples/melotts-en-newest.mp3) |
+| Spanish | <audio controls src="examples/melotts-es.mp3"></audio> | [MP3](examples/melotts-es.mp3) |
+| French | <audio controls src="examples/melotts-fr.mp3"></audio> | [MP3](examples/melotts-fr.mp3) |
+| Chinese | <audio controls src="examples/melotts-zh.mp3"></audio> | [MP3](examples/melotts-zh.mp3) |
+| Japanese | <audio controls src="examples/melotts-jp.mp3"></audio> | [MP3](examples/melotts-jp.mp3) |
+| Korean | <audio controls src="examples/melotts-kr.mp3"></audio> | [MP3](examples/melotts-kr.mp3) |
 
 ---
 
@@ -73,6 +77,25 @@ curl -X POST "http://localhost:8888/tts/convert/tts" \
 
 Available formats are exposed at `GET /tts/formats`.
 The web UI defaults to MP3 downloads because it is a more practical size for interactive use.
+
+---
+
+## ℹ️ About This Fork
+
+This project is an independently maintained fork of the original [MeloTTS](https://github.com/myshell-ai/MeloTTS) by [Wenliang Zhao](https://github.com/wl-zhao), [Xumin Yu](https://github.com/yuxumin), and [Zengyi Qin](https://github.com/Zengyi-Qin).
+The original work is licensed under the MIT License, and we thank the authors for their excellent research and contributions.
+
+While the original MeloTTS is an impressive research project, this fork focuses on making it simple to run and integrate: Docker image, included UI, and API support out of the box.
+
+⚠️ **Note:** This project is maintained for usability and convenience by a single developer. It is not a production-hardened system and may require additional work for critical deployments.
+
+✅ **Offline Mode:** Supported when models are baked into the Docker image or mounted through a volume.
+
+## 🆘 Support & Issues
+If you encounter bugs, have feature requests, or need help using MeloTTS:
+- Please open a new [GitHub Issue](https://github.com/TheMasterOfDisasters/MeloTTS/issues) with as much detail as possible
+- Include error messages, logs, and reproduction steps if applicable
+- For general questions or ideas, you can also use the [Discussions](https://github.com/TheMasterOfDisasters/MeloTTS/discussions) tab
 
 ---
 

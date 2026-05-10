@@ -28,12 +28,41 @@ function Get-NextPatchSnapshot([string]$releaseVersion) {
     return "v$major.$minor.$patch-SNAPSHOT"
 }
 
+function Assert-Releasable-WorkingTree {
+    $statusLines = @(git status --porcelain=v1)
+    $blockingChanges = @()
+    $trackedTodoChanges = @()
+
+    foreach ($line in $statusLines) {
+        if ($line.Length -lt 4) {
+            continue
+        }
+
+        $path = $line.Substring(3)
+        $isTodoPath = $path -eq "todo" -or $path.StartsWith("todo/") -or $path.StartsWith("todo\")
+
+        if ($isTodoPath) {
+            if (-not $line.StartsWith("?? ")) {
+                $trackedTodoChanges += $line
+            }
+            continue
+        }
+
+        $blockingChanges += $line
+    }
+
+    if ($trackedTodoChanges) {
+        throw "todo/ files are local-only and must not be staged or tracked before release:`n$($trackedTodoChanges -join "`n")"
+    }
+
+    if ($blockingChanges) {
+        throw "Working tree must be clean before release, except untracked todo/ files:`n$($blockingChanges -join "`n")"
+    }
+}
+
 Push-Location $repoRoot
 try {
-    $status = git status --porcelain
-    if ($status) {
-        throw "Working tree must be clean before release. Commit or stash changes first."
-    }
+    Assert-Releasable-WorkingTree
 
     $currentVersion = Normalize-Version (Get-Content -Raw -LiteralPath $versionFile)
     if (-not $Version) {

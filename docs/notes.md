@@ -162,6 +162,8 @@ The task requires `VERSION` to be a snapshot such as `v0.0.8-SNAPSHOT`. It commi
 
     task release RELEASE_VERSION=v0.0.8 NEXT_VERSION=v0.1.0-SNAPSHOT
 
+The release task allows untracked local `todo/` files so private notes can stay visible locally. It fails if anything in `todo/` is staged or tracked, because `todo/` is not meant to be released.
+
 Publish the prepared release with:
 
     task releasepush RELEASE_VERSION=v0.0.8
