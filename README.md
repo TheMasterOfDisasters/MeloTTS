@@ -1,4 +1,4 @@
-<p><img src="logo.png" alt="MeloTTS logo""></p>
+<p><img src="logo.png" alt="MeloTTS logo"></p>
 
 # MeloTTS — Maintained & Easy-to-Use Fork 🛠️
 
@@ -101,7 +101,7 @@ Current tag pattern:
 
 ## 📜 Version History
 
-### v0.0.8 (planned)
+### v0.0.8 (10.05.2026)
 - Scope: runtime-focused cleanup for the Docker UI/API fork.
 - Removed unused upstream training surfaces, including training scripts/modules, training example data, legacy script-style package tests, and original upstream docs that no longer matched this fork.
 - Trimmed runtime helper code by reducing `melo/utils.py` to inference text preparation, config loading, and `HParams`.
@@ -117,8 +117,13 @@ Current tag pattern:
 - Normalized package metadata versioning in `setup.py` so display versions like `v0.0.8-SNAPSHOT` install as valid Python package versions such as `0.0.8.dev0`.
 - Added `task release` backed by the root snapshot `VERSION` file, and corrected Docker release tags so the full image publishes as `<version>` while the EN-focused image publishes as `<version>_en`.
 - Expanded rapid local iteration tasks so `task localrun`, `task localdev`, and `task localapi` bind-mount `melo/app.py`.
-- Added `todo/FEATURE_IDEAS.md` with practical UI/API/runtime improvements that fit the current codebase.
 - Documentation: corrected API examples to use `/tts/convert/tts` JSON payloads and documented the current runtime-only scope.
+  ```bash
+  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.8_en
+  docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.8
+  docker run -p 8888:8888 --gpus "device=1" sensejworld/melotts:v0.0.8_en
+  ```
+
 
 ### v0.0.7 (29.03.2026)
 - Upgraded Docker runtime/build baseline to Python 3.10 (`python:3.10-slim`) and aligned packaging with `python_requires>=3.10`.
@@ -141,6 +146,7 @@ Current tag pattern:
   docker run -p 8888:8888 --gpus all sensejworld/melotts:v0.0.7
   docker run -p 8888:8888 --gpus "device=1" sensejworld/melotts:v0.0.7_en
   ```
+  https://hub.docker.com/r/sensejworld/melotts
 
 ### v0.0.6 (27.03.2026)
 - Model loading is now much faster (from ~30 seconds down to only a few seconds in testing).

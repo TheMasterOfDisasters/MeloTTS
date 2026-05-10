@@ -94,7 +94,7 @@ Main tag strategy:
 
 ## 📜 Version History
 
-### v0.0.8 (planned)
+### v0.0.8 (10.05.2026)
 - Scope: runtime-focused cleanup for the Docker UI/API fork.
 - Removed unused upstream training surfaces, including training scripts/modules, training example data, legacy script-style package tests, and original upstream docs that no longer matched this fork.
 - Trimmed runtime helper code by reducing `melo/utils.py` to inference text preparation, config loading, and `HParams`.
@@ -110,7 +110,6 @@ Main tag strategy:
 - Normalized package metadata versioning in `setup.py` so display versions like `v0.0.8-SNAPSHOT` install as valid Python package versions such as `0.0.8.dev0`.
 - Added `task release` backed by the root snapshot `VERSION` file, and corrected Docker release tags so the full image publishes as `<version>` while the EN-focused image publishes as `<version>_en`.
 - Expanded rapid local iteration tasks so `task localrun`, `task localdev`, and `task localapi` bind-mount `melo/app.py`.
-- Added `todo/FEATURE_IDEAS.md` with practical UI/API/runtime improvements that fit the current codebase.
 - Documentation: corrected API examples to use `/tts/convert/tts` JSON payloads and documented the current runtime-only scope.
 
 ### v0.0.7 (29.03.2026)
