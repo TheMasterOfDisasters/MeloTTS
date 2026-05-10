@@ -21,7 +21,7 @@ Official Docker images are published here: [sensejworld/melotts on Docker Hub](h
 
 Preview MP3 samples from the full multilingual image:
 
-[Open the voice examples page](https://themasterofdisasters.github.io/MeloTTS/examples/)
+[Open the voice examples page](https://hangry-labs.github.io/MeloTTS/examples/)
 
 GitHub does not render embedded audio players directly in README files, so direct MP3 links are also provided below.
 
@@ -91,15 +91,17 @@ The original work is licensed under the MIT License, and we thank the authors fo
 
 While the original MeloTTS is an impressive research project, this fork focuses on making it simple to run and integrate: Docker image, included UI, and API support out of the box.
 
+License and attribution are preserved in [`LICENSE`](LICENSE). The original MeloTTS copyright remains with MyShell.ai; this fork adds separate Hangry Labs copyright for the Docker packaging, Web UI/API integration, documentation, release tooling, and other modifications.
+
 ⚠️ **Note:** This project is maintained for usability and convenience by a single developer. It is not a production-hardened system and may require additional work for critical deployments.
 
 ✅ **Offline Mode:** Supported when models are baked into the Docker image or mounted through a volume.
 
 ## 🆘 Support & Issues
 If you encounter bugs, have feature requests, or need help using MeloTTS:
-- Please open a new [GitHub Issue](https://github.com/TheMasterOfDisasters/MeloTTS/issues) with as much detail as possible
+- Please open a new [GitHub Issue](https://github.com/hangry-labs/MeloTTS/issues) with as much detail as possible
 - Include error messages, logs, and reproduction steps if applicable
-- For general questions or ideas, you can also use the [Discussions](https://github.com/TheMasterOfDisasters/MeloTTS/discussions) tab
+- For general questions or ideas, you can also use the [Discussions](https://github.com/hangry-labs/MeloTTS/discussions) tab
 
 ---
 

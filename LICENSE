@@ -1,4 +1,10 @@
+MIT License
+
+Original MeloTTS:
 Copyright (c) 2024 MyShell.ai
+
+Modifications, Docker packaging, Web UI/API integration, documentation, and release tooling:
+Copyright (c) 2026 Hangry Labs and contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

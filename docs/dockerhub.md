@@ -1,6 +1,6 @@
 # 🗣️ MeloTTS WebUI & API (Docker)
 
-This is an [independently maintained fork](https://github.com/TheMasterOfDisasters/MeloTTS) of the original [MeloTTS](https://github.com/myshell-ai/MeloTTS), focusing on making it **easy to run, integrate, and test** without deep technical setup.
+This is an [independently maintained fork](https://github.com/hangry-labs/MeloTTS) of the original [MeloTTS](https://github.com/myshell-ai/MeloTTS), focusing on making it **easy to run, integrate, and test** without deep technical setup.
 
 ## ✅ Features
 - Multilingual TTS: EN, ES, FR, ZH, JP, KR
@@ -71,15 +71,15 @@ curl -v -X POST http://localhost:8888/tts/convert/tts ^
 
 ## 🆘 Support & Issues
 If you encounter a bug, have a feature request, or want to contribute:
-- 📄 Open a **[GitHub Issue](https://github.com/TheMasterOfDisasters/MeloTTS/issues)** with full details (logs, commands used, reproduction steps)
-- 💬 Start a discussion in the **[GitHub Discussions](https://github.com/TheMasterOfDisasters/MeloTTS/discussions)** tab for ideas or questions
-- 🛠 Check **[Known Issues](https://github.com/TheMasterOfDisasters/MeloTTS/issues?q=is%3Aissue+is%3Aopen+label%3Abug)** before reporting
+- 📄 Open a **[GitHub Issue](https://github.com/hangry-labs/MeloTTS/issues)** with full details (logs, commands used, reproduction steps)
+- 💬 Start a discussion in the **[GitHub Discussions](https://github.com/hangry-labs/MeloTTS/discussions)** tab for ideas or questions
+- 🛠 Check **[Known Issues](https://github.com/hangry-labs/MeloTTS/issues?q=is%3Aissue+is%3Aopen+label%3Abug)** before reporting
 
 I respond fastest on GitHub — Docker Hub comments aren’t monitored regularly.
 
 ### 🔗 Common Help Topics
-- **[ReadMe](https://github.com/TheMasterOfDisasters/MeloTTS/blob/main/README.md)**
-- **[Technical Readme](https://github.com/TheMasterOfDisasters/MeloTTS/blob/main/docs/notes.md)**
+- **[ReadMe](https://github.com/hangry-labs/MeloTTS/blob/main/README.md)**
+- **[Technical Readme](https://github.com/hangry-labs/MeloTTS/blob/main/docs/notes.md)**
 
 
 ## 📦 Docker Hub Tags
