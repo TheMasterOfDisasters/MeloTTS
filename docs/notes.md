@@ -161,3 +161,9 @@ Root `VERSION` is the release source of truth. A standard patch release can be p
 The task requires `VERSION` to be a snapshot such as `v0.0.8-SNAPSHOT`. It commits `VERSION=v0.0.8`, creates tag `v0.0.8`, then commits the next patch snapshot such as `v0.0.9-SNAPSHOT`. Override the release or next version only when needed:
 
     task release RELEASE_VERSION=v0.0.8 NEXT_VERSION=v0.1.0-SNAPSHOT
+
+Publish the prepared release with:
+
+    task releasepush RELEASE_VERSION=v0.0.8
+
+This pushes the release tag first so GitHub Actions runs the tag build, then pushes `main` with the next `-SNAPSHOT` version.

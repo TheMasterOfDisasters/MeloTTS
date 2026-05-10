@@ -14,6 +14,8 @@ vars:
   WAIT_URL: http://localhost:{{.PORT}}/tts/ping
   RELEASE_VERSION: ''
   NEXT_VERSION: ''
+  RELEASE_REMOTE: origin
+  RELEASE_BRANCH: main
 
 tasks:
   gpuinfo:
@@ -126,6 +128,11 @@ tasks:
     desc: Release current VERSION snapshot, tag it, then bump to next snapshot
     cmds:
       - powershell -NoProfile -ExecutionPolicy Bypass -File "{{.TASKFILE_DIR}}\scripts\release.ps1" -Version "{{.RELEASE_VERSION}}" -NextVersion "{{.NEXT_VERSION}}"
+
+  releasepush:
+    desc: Push release tag first, then branch, so GitHub tag workflows build the release
+    cmds:
+      - powershell -NoProfile -ExecutionPolicy Bypass -File "{{.TASKFILE_DIR}}\scripts\release-push.ps1" -Version "{{.RELEASE_VERSION}}" -Remote "{{.RELEASE_REMOTE}}" -Branch "{{.RELEASE_BRANCH}}"
 
   nuke:
     desc: Remove local MeloTTS containers and image

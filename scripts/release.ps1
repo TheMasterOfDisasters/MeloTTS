@@ -68,7 +68,7 @@ try {
     git commit -m "Start $NextVersion"
 
     Write-Host "Prepared release $releaseVersion and next development version $NextVersion."
-    Write-Host "Push with: git push origin main $releaseVersion"
+    Write-Host "Publish with: task releasepush RELEASE_VERSION=$releaseVersion"
 } finally {
     Pop-Location
 }
